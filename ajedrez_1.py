@@ -1,4 +1,4 @@
-from PiezasYCasillas import *
+from piezas_y_casillas import *
 
 fila_p = []
 fila_i = []
