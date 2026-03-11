@@ -75,9 +75,9 @@ tablero[0][2] = tablero[0][5] = NA
 tablero[0][3] = ND
 tablero[0][4] = NR
 tablero[7][0] = tablero[7][7] = BT
-# tablero[7][1] = tablero[7][6] = BC
-tablero[4][4] = tablero[4][3] = BA
-# tablero[7][3] = BD
+tablero[7][1] = tablero[7][6] = BC
+tablero[7][2] = tablero[7][5] = BA
+tablero[4][4] = BD
 tablero[7][4] = BR
 tablero[6] = [BP] * 8
 tablero[1] = [NP] * 8
@@ -251,8 +251,25 @@ def mov_rey_blanco():
     return False
 
 def mov_rey_negro():
+    global enroque_nr, primer_mov_nr
+    
     if (xv + 1 == x or xv - 1 == x or xv == x) and (yv + 1 == y or yv - 1 == y or yv == y):
+        primer_mov_nr = True
         return True         
+    elif not enroque_nr and not primer_mov_nr and x == xv + 2 and tablero[y][xv + 3] == NT:
+        print("¡Enroque corto rey negro!")
+        tablero[y][xv + 1] = NT
+        tablero[y][xv + 3] = tablero_vacio[y][xv + 3]
+        enroque_nr = True
+        primer_mov_nr = True
+        return True
+    elif not enroque_nr and not primer_mov_nr and x == xv - 2 and tablero[y][xv - 4] == NT:
+        print("¡Enroque largo rey negro!")
+        tablero[y][xv - 1] = NT
+        tablero[y][xv - 4] = tablero_vacio[y][xv - 4]
+        enroque_nr = True
+        primer_mov_nr = True
+        return True
     
     return False
     
