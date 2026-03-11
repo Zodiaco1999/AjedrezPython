@@ -1,6 +1,6 @@
 # Variables de las casillas del tablero
-N = "◼ "   
-B = "◻ "
+B = "◼ "   
+N = "◻ "
 # Variables de piezas blancas
 BP = "♟ "
 BC = "♞ "

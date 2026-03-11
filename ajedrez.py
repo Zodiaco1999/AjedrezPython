@@ -74,9 +74,9 @@ tablero[0][1] = tablero[0][6] = NC
 tablero[0][2] = tablero[0][5] = NA
 tablero[0][3] = ND
 tablero[0][4] = NR
-tablero[4][3] = tablero[4][4] = BT
+tablero[7][0] = tablero[7][7] = BT
 # tablero[7][1] = tablero[7][6] = BC
-# tablero[7][2] = tablero[7][5] = BA
+tablero[4][4] = tablero[4][3] = BA
 # tablero[7][3] = BD
 tablero[7][4] = BR
 tablero[6] = [BP] * 8
@@ -91,6 +91,7 @@ def es_posicion_valida(p):
         return False
     
     global x, y
+ 
     p = p.lower()
     
     x = columnas_a_indices.get(p[0])
@@ -196,60 +197,32 @@ def mov_caballo():
     if ((xv + 2 == x or xv - 2 == x) and (yv - 1 == y or yv + 1 == y)) or ((xv + 1 == x or xv - 1 == x) and (yv - 2 == y or yv + 2 == y)):
         return True
 
-def recorrido_alfil(list_cy, list_cx):
-    for i in range(len(list_cx)):
-        if (tablero[list_cy[i]][list_cx[i]] in all_piezas) and (i + 1 < len(list_cx)):
-           return False 
-    return True
-    
-def mov_alfil():
-    # "cix" es: contador en incremento x "cdy" es: contador en disminución y
-    ciy, cdy, cix, cdx = yv + 1, yv - 1, xv + 1, xv - 1
-    list_cy, list_cx  = [], []
-    if xv < x and yv > y:
-        while cix < 8 and cdy > -1:
-            list_cy.append(cdy), list_cx.append(cix)
-            if cdy == y and cix == x:
-                return recorrido_alfil(list_cy, list_cx)
-            cdy -= 1 
-            cix += 1 
-    elif xv > x and yv > y: 
-        while cdx > -1 and cdy > -1:
-            list_cy.append(cdy), list_cx.append(cdx)
-            if cdy == y and cdx == x:
-                return recorrido_alfil(list_cy, list_cx)
-            cdy -= 1 
-            cdx -= 1 
-    elif xv < x and yv < y:
-        while cix < 8 and ciy < 8:
-            list_cy.append(ciy), list_cx.append(cix)
-            if ciy == y and cix == x:
-                return recorrido_alfil(list_cy, list_cx)
-            ciy += 1 
-            cix += 1 
-    elif xv > x and yv < y:
-        while cdx > -1 and ciy < 8:
-            list_cy.append(ciy), list_cx.append(cdx)
-            if ciy == y and cdx == x:
-                return recorrido_alfil(list_cy, list_cx)
-            ciy += 1 
-            cdx -= 1
-
-def mov_torre():
-    if xv != x and yv != y:
-        return False
-
+def camino_libre():
     desplazamiento_x = (x > xv) - (x < xv)
     desplazamiento_y = (y > yv) - (y < yv)
 
-    indice_x, indice_y = xv + desplazamiento_x, yv + desplazamiento_y
-    while (indice_x, indice_y) != (x, y):
+    indice_x = xv + desplazamiento_x 
+    indice_y = yv + desplazamiento_y
+    
+    while (indice_y, indice_x) != (y, x):
         if tablero[indice_y][indice_x] in all_piezas:
             return False
         indice_x += desplazamiento_x
         indice_y += desplazamiento_y
 
     return True
+    
+def mov_alfil():
+    if abs(x - xv) != abs(y - yv):
+        return False
+
+    return camino_libre()
+ 
+def mov_torre():
+    if xv != x and yv != y:
+        return False
+
+    return camino_libre()
  
 def mov_reina():
     return mov_alfil() or mov_torre()
@@ -284,8 +257,10 @@ def mov_rey_negro():
     return False
     
 def movimiento_pieza(p, x, y):
+    if x == xv and y == yv:
+        return False
     # movimientos de las piezas blancas
-    if p in piezas_blancas and tablero[y][x] not in piezas_blancas + NR:
+    elif p in piezas_blancas and tablero[y][x] not in piezas_blancas + NR:
         if es_pieza_actual(BP): 
             return mov_peon_blanco()
         elif es_pieza_actual(BC):
