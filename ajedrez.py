@@ -74,7 +74,7 @@ tablero[0][1] = tablero[0][6] = NC
 tablero[0][2] = tablero[0][5] = NA
 tablero[0][3] = ND
 tablero[0][4] = NR
-tablero[7][0] = tablero[7][7] = BT
+tablero[4][3] = tablero[4][4] = BT
 # tablero[7][1] = tablero[7][6] = BC
 # tablero[7][2] = tablero[7][5] = BA
 # tablero[7][3] = BD
@@ -236,44 +236,20 @@ def mov_alfil():
             cdx -= 1
 
 def mov_torre():
-    list_cy, list_cx  = [], []
-    cy, cx =  yv, xv 
-    if xv == x and yv > y:
-        while cy > -1:
-            list_cy.append(cy)
-            if cy == y:
-                for i in range(len(list_cy)):
-                    if (tablero[list_cy[i]][x] in all_piezas) and (i + 1 < len(list_cy)):
-                        return False 
-                return True 
-            cy -= 1
-    elif xv < x and yv == y:
-        while cx < 8:
-            list_cx.append(cx)
-            if cx == x:
-                for i in range(len(list_cx)):
-                    if (tablero[y][list_cx[i]] in all_piezas) and (i + 1 < len(list_cx)):
-                        return False 
-                return True 
-            cx += 1
-    elif xv == x and yv < y:
-        while cy < 8:
-            list_cy.append(cy)
-            if cy == y:
-                for i in range(len(list_cy)):
-                    if (tablero[list_cy[i]][x] in all_piezas) and (i + 1 < len(list_cy)):
-                        return False 
-                return True 
-            cy += 1
-    elif xv > x and yv == y:
-        while cx > -1:
-            list_cx.append(cx)
-            if cx == x:
-                for i in range(len(list_cx)):
-                    if (tablero[y][list_cx[i]] in all_piezas) and (i + 1 < len(list_cx)):
-                        return False 
-                return True 
-            cx -= 1  
+    if xv != x and yv != y:
+        return False
+
+    desplazamiento_x = (x > xv) - (x < xv)
+    desplazamiento_y = (y > yv) - (y < yv)
+
+    indice_x, indice_y = xv + desplazamiento_x, yv + desplazamiento_y
+    while (indice_x, indice_y) != (x, y):
+        if tablero[indice_y][indice_x] in all_piezas:
+            return False
+        indice_x += desplazamiento_x
+        indice_y += desplazamiento_y
+
+    return True
  
 def mov_reina():
     return mov_alfil() or mov_torre()
