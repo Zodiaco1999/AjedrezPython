@@ -1,4 +1,5 @@
 from piezas_y_casillas import *
+from movimientos import *
 
 fila_p = []
 fila_i = []
@@ -68,19 +69,20 @@ def imprimir_tablero():
         print(8 - i,tablero[i][:],8 - i)
     nomenclatura_columnas()
 
-# Asignando las piezas a las posciciones de la matriz bidimensional 
-tablero[0][0] = tablero[0][7] = NT
-tablero[0][1] = tablero[0][6] = NC
-tablero[0][2] = tablero[0][5] = NA
-tablero[0][3] = ND
-tablero[0][4] = NR
-tablero[7][0] = tablero[7][7] = BT
+# Asignando las piezas blancas
+## tablero[6] = [BP] * 8
 tablero[7][1] = tablero[7][6] = BC
 tablero[7][2] = tablero[7][5] = BA
-tablero[4][4] = BD
-tablero[7][4] = BR
-tablero[6] = [BP] * 8
-tablero[1] = [NP] * 8
+tablero[5][7] = BT
+tablero[7][3] = BD
+tablero[6][7] = BR
+# Asignando las piezas negras
+##tablero[1] = [NP] * 8
+tablero[0][1] = tablero[0][6] = NC
+tablero[5][0] = NA
+tablero[1][2] = ND
+tablero[0][3] = NT
+tablero[0][4] = NR
 
 def msj_posicion_inv():
     print("\n¡Posición invalida!\n")
@@ -103,23 +105,24 @@ def es_posicion_valida(p):
     return True
 
 def turnos(t, ti=1):
-    global primer_mov_bp
-    global primer_mov_np 
-    if ti:
-        if t % 2 != 0:
-            print("\n=============Turno de las blancas===============")
-            primer_mov_bp = False
-        else:
-            print("\n=============Turno de las negras================")
-            primer_mov_np = False
-    else:
-        if t % 2 != 0:
-            print("\n¡Por favor, seleccione una pieza blanca!\n")
-            input("Presione enter para continuar\n")
-        else:
-            print("\n¡Por favor, seleccione una pieza negra!\n")
-            input("Presione enter para continuar\n")
+    global primer_mov_bp, primer_mov_np
+    
+    es_turno_blanco = t % 2 != 0
+    color = "blanca" if es_turno_blanco else "negra"
+    
+    print(f"\n================Turno de las {color}s================")
+    if es_turno_blanco: 
+        primer_mov_bp = False
+        return True
+    else: 
+        primer_mov_np = False
+        return False
             
+def turno_invalido(es_turno_blanco):
+    color = "blanca" if es_turno_blanco else "negra"
+    print(f"\n¡Por favor, seleccione una pieza {color}!\n")
+    input("Presione enter para continuar\n")
+    
 def es_pieza_actual(pieza):
     return pieza_selec == pieza
             
@@ -307,11 +310,53 @@ def movimiento_pieza(p, x, y):
     else:
         return False
     
+def validar_jaque(yn, xn, pieza_objetivo):
+    return 0 <= yn < 8 and 0 <= xn < 8 and tablero[yn][xn] == pieza_objetivo
+
+def movimientos_estrella(ya, xa, movimientos, pieza_obstaculo, pieza_objetivo):
+    for dy, dx in movimientos:
+        yn = ya + dy
+        xn = xa + dx
+        while 0 <= yn < 8 and 0 <= xn < 8 and tablero[yn][xn] not in piezas_blancas_sr + f"{NP}{NC}{pieza_obstaculo}":
+            if tablero[yn][xn] in f"{pieza_objetivo}{ND}":
+                return True    
+            yn += dy
+            xn += dx
+            
+    return False
+
+def es_jaque(es_turno_blanco):
+    if es_turno_blanco:
+        ya, xa = hallar_posicion_pieza(tablero, BR)
+        
+        for dy, dx in MOVIMIENTOS_PEON_NEGRO:
+            if validar_jaque(ya + dy, xa + dx, NP):
+                return True
+        
+        for dy, dx in MOVIMIENTOS_CABALLO:
+            if validar_jaque(ya + dy, xa + dx, NC):
+                return True
+            
+        if movimientos_estrella(ya, xa, MOVIMIENTOS_ALFIL, NT, NA): 
+            return True
+    
+        if movimientos_estrella(ya, xa, MOVIMIENTOS_TORRE, NA, NT):
+            return True
+
+    return False
+
+def hallar_posicion_pieza(tablero, pieza_buscada):
+    for y, fila in enumerate(tablero):
+        if pieza_buscada in fila:
+            x = fila.index(pieza_buscada)
+            return [y, x]
+    return None
+
 def volver():
     imprimir_tablero()
     global p
     print(f"\nPieza seleccionada: {pieza_selec}")
-    p = input("\nIngrese la posición donde quiere mover la pieza o presione \"v\" para volver\n")
+    p = input('\nIngrese la posición donde quiere mover la pieza o presione "v" para volver\n')
     if p == "v":
         global turno
         global x
@@ -327,19 +372,11 @@ def volver():
 while True:
     imprimir_tablero()
 
-    for y in range(8):
-        for x in range(8):
-            if tablero[y][x] == BR:
-                ubic_rey = tablero[y][x]
-                break
-        else:
-            continue
-        break
-    
-    if tablero[y - 1][x + 1] == NP or tablero[y - 1][x - 1] == NP:
-        print("¡Rey blanco en jaque!")
+    es_turno_blanco = turnos(turno)
 
-    turnos(turno)
+    if es_jaque(es_turno_blanco):
+        print("\n¡Jaque al rey blanco!")
+    
     p = input("\nIngrese la posición de la pieza que quiere seleccionar\n")
     
     if es_posicion_valida(p):
@@ -349,13 +386,13 @@ while True:
             continue
         else:
             pieza_selec = tablero[y][x]
-            if turno % 2 != 0:
+            if es_turno_blanco:
                 if pieza_selec in piezas_blancas:
                     tablero[y][x] = tablero_vacio[y][x]
                     xv = x
                     yv = y 
                 else:
-                    turnos(turno, turno_inv)
+                    turno_invalido(es_turno_blanco)
                     continue
             else:
                 if pieza_selec in piezas_negras:
@@ -363,7 +400,7 @@ while True:
                     xv = x
                     yv = y 
                 else:
-                    turnos(turno, turno_inv)
+                    turno_invalido(es_turno_blanco)
                     continue
             turno += 1
     else:
