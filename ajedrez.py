@@ -1,5 +1,6 @@
 from piezas_y_casillas import *
 from movimientos import *
+import copy
 
 fila_p = []
 fila_i = []
@@ -71,16 +72,16 @@ def imprimir_tablero():
 #tablero[6] = [BP] * 8
 #tablero[7][1] = tablero[7][6] = BC
 #tablero[7][2] = tablero[7][5] = BA
-tablero[7][0] = tablero[7][7] = BT
+tablero[7][0] = tablero[1][1] = BT
 #tablero[7][3] = BD
-tablero[7][4] = BR
+tablero[7][6] = BR
 # Asignando las piezas negras
 #tablero[1] = [NP] * 8
 tablero[0][1] = tablero[0][6] = NC
 tablero[0][2] = tablero[0][5] = NA
-tablero[0][0] = tablero[1][1] = NT
-tablero[0][3] = ND
-tablero[0][4] = NR
+tablero[0][0] = tablero[7][1] = NT
+tablero[1][0] = ND
+tablero[0][3] = NR
 
 def msj_posicion_inv():
     print("\n¡Posición invalida!\n")
@@ -92,7 +93,7 @@ def es_posicion_valida(p):
     
     global x, y
  
-    p = p.lower()
+    p = p.lower() 
     
     x = columnas_a_indices.get(p[0])
     y = filas_a_indices.get(p[1])
@@ -241,19 +242,23 @@ def mov_torre():
 def mov_reina():
     return mov_alfil() or mov_torre()
 
-def mov_rey_blanco():
+def mov_rey_blanco(es_jaque_actual):
     global primer_mov_br
     
     if abs(x - xv) <= 1 and abs(y - yv) <= 1: 
+        if es_jaque((y, x), True):
+            print("\n¡No puedes mover el rey a esa posición porque estaría en jaque!")
+            return False
+
         for dy, dx in MOVIMIENTOS_REY:
             yn, xn = y + dy, x + dx
             if validar_jaque(yn, xn, NR):
-                print("\n¡No puedes mover el rey a esa posición porque estaría en jaque!\n")
+                print("\n¡No puedes mover el rey a esa posición porque estaría en jaque!")
                 return False
 
         primer_mov_br = True
         return True             
-    elif not primer_mov_br and not primer_mov_btd and tablero[y][xv + 1] in CASILLAS_VACIAS and x == xv + 2 and tablero[y][xv + 3] == BT:
+    elif not es_jaque_actual and not primer_mov_br and not primer_mov_btd and tablero[y][xv + 1] in CASILLAS_VACIAS and x == xv + 2 and tablero[y][xv + 3] == BT:
         for dx in range(1, 3):
             if es_jaque((y, xv + dx), True):
                 print("\n¡No puedes enrocar porque el rey pasaría por una casilla en jaque!")
@@ -264,7 +269,7 @@ def mov_rey_blanco():
         tablero[y][xv + 3] = tablero_vacio[y][xv + 3]
         primer_mov_br = True
         return True
-    elif (not primer_mov_br and not primer_mov_bti and 
+    elif (not es_jaque_actual and not primer_mov_br and not primer_mov_bti and 
           tablero[y][xv - 1] in CASILLAS_VACIAS and tablero[y][xv - 3] in CASILLAS_VACIAS 
           and x == xv - 2 and tablero[y][xv - 4] == BT):
         for dx in range(1, 3):
@@ -301,8 +306,9 @@ def mov_rey_negro():
     
     return False
     
-def movimiento_pieza(p, x, y):
+def movimiento_pieza(p, x, y, es_jaque_actual):
     if x == xv and y == yv:
+        print("\n¡No puedes mover la pieza a su propia posición!")
         return False
     # movimientos de las piezas blancas
     elif p in piezas_blancas and tablero[y][x] not in piezas_blancas + NR:
@@ -317,7 +323,7 @@ def movimiento_pieza(p, x, y):
         elif es_pieza_actual(BD):
             return mov_reina()
         elif es_pieza_actual(BR):
-            return mov_rey_blanco()
+            return mov_rey_blanco(es_jaque_actual)
     # movimientos de las piezas negras        
     elif p in piezas_negras and tablero[y][x] not in piezas_negras + BR:
         if es_pieza_actual(NP):
@@ -390,18 +396,22 @@ def es_jaque(posicion_rey, es_turno_blanco):
 
     return False
 
-def volver():
+def reiniciar_turno():
+    global turno
+    global x
+    global y
+    x = xv
+    y = yv
+    turno -= 1
+    tablero[y][x] = pieza_selec
+
+def revertir_seleccion():
     imprimir_tablero()
     global p
     print(f"\nPieza seleccionada: {pieza_selec}")
     p = input('\nIngrese la posición donde quiere mover la pieza o presione "v" para volver\n')
     if p == "v":
-        global turno
-        global x
-        global y
-        x = xv
-        y = yv
-        turno -= 1
+        reiniciar_turno()
         return True
     else:
         return False
@@ -433,11 +443,6 @@ while True:
             input("\nPresione enter para continuar")
             continue
         else:
-            if es_jaque_actual and pieza_selec not in {BR, NR}:
-                print("\n¡No puedes mover esa pieza mientras estás en jaque!")
-                input("\nPresione enter para continuar")
-                continue
-
             if es_turno_blanco:
                 if pieza_selec in piezas_blancas:
                     tablero[y][x] = tablero_vacio[y][x]
@@ -459,8 +464,16 @@ while True:
         msj_posicion_inv()
         continue
     
-    while not volver():
-        if not es_posicion_valida(p) or not movimiento_pieza(pieza_selec, x, y):
+    while not revertir_seleccion():
+        if es_posicion_valida(p) and movimiento_pieza(pieza_selec, x, y, es_jaque_actual):
+            tablero_copia = copy.deepcopy(tablero)
+            tablero[y][x] = pieza_selec
+            if es_jaque((y, x) if pieza_selec == rey_actual else (ya, xa), es_turno_blanco):
+                tablero = tablero_copia
+                print("\n¡No puedes mover ahí porque tu rey estaría en jaque!")
+                msj_posicion_inv()
+            else:
+                break
+        else:
             msj_posicion_inv()
-        else: break
-    tablero[y][x] = pieza_selec
+    
