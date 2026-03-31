@@ -79,8 +79,8 @@ tablero[7][6] = BR
 #tablero[1] = [NP] * 8
 tablero[0][1] = tablero[0][6] = NC
 tablero[0][2] = tablero[0][5] = NA
-tablero[0][0] = tablero[7][1] = NT
-tablero[1][0] = ND
+tablero[0][0] = tablero[6][1] = NT
+tablero[1][6] = ND
 tablero[0][3] = NR
 
 def msj_posicion_inv():
@@ -347,16 +347,19 @@ def hallar_posicion_pieza(tablero, pieza_buscada):
             x = fila.index(pieza_buscada)
             return [y, x]
     return None
+
+def es_movimiento_valido(yn, xn):
+    return 0 <= yn < 8 and 0 <= xn < 8
     
 def validar_jaque(yn, xn, pieza_objetivo):
-    return 0 <= yn < 8 and 0 <= xn < 8 and tablero[yn][xn] == pieza_objetivo
+    return es_movimiento_valido(yn, xn) and tablero[yn][xn] == pieza_objetivo
 
 def movimientos_estrella(posicion_rey, movimientos, atacantes_validos):
     ya, xa = posicion_rey
     for dy, dx in movimientos:
         yn, xn = ya + dy, xa + dx
         
-        while 0 <= yn < 8 and 0 <= xn < 8:
+        while es_movimiento_valido(yn, xn):
             pieza_actual = tablero[yn][xn]
             
             if pieza_actual not in CASILLAS_VACIAS:
@@ -396,6 +399,22 @@ def es_jaque(posicion_rey, es_turno_blanco):
 
     return False
 
+def es_jaque_mate(posicion_en_jaque, es_turno_blanco):
+    ya, xa = posicion_en_jaque
+    casillas_en_jaque = 0
+    pieza_enemigas_sr = piezas_negras_sr if es_turno_blanco else piezas_blancas_sr
+    for dy, dx in MOVIMIENTOS_REY:
+        yn, xn = ya + dy, xa + dx
+        if not es_movimiento_valido(yn, xn):
+            casillas_en_jaque += 1
+        elif (tablero[yn][xn] in CASILLAS_VACIAS or tablero[yn][xn] in pieza_enemigas_sr) and es_jaque((yn, xn), es_turno_blanco):
+            casillas_en_jaque += 1
+            
+    if casillas_en_jaque == len(MOVIMIENTOS_REY):
+        return True
+    
+    return False
+
 def reiniciar_turno():
     global turno
     global x
@@ -426,8 +445,11 @@ while True:
     
     es_jaque_actual = es_jaque((ya, xa), es_turno_blanco)
     if es_jaque_actual:
+        if es_jaque_mate((ya, xa), es_turno_blanco):
+            print(f"\n¡Jaque mate! ¡Ganan las {'negras' if es_turno_blanco else 'blancas'}!")
+            break 
         print(f"\n¡Jaque al rey {'blanco' if es_turno_blanco else 'negro'}!")
-    
+   
     p = input("\nIngrese la posición de la pieza que quiere seleccionar\n")
     
     ###### Quitar esta linea al final ######
@@ -476,4 +498,3 @@ while True:
                 break
         else:
             msj_posicion_inv()
-    
