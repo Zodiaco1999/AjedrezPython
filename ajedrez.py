@@ -71,16 +71,17 @@ def imprimir_tablero():
 
 # Asignando las piezas blancas
 #tablero[6] = [BP] * 8
-#tablero[7][1] = tablero[7][6] = BC
+tablero[0][0] = tablero[5][2] = BC
 #tablero[7][2] = tablero[7][5] = BA
-tablero[2][2] = tablero[1][1] = BT
+#tablero[7][4] = tablero[1][1] = BT
 #tablero[7][3] = BD
-tablero[7][6] = BR
+tablero[7][7] = BR
 # Asignando las piezas negras
 #tablero[1] = [NP] * 8
-tablero[0][1] = tablero[0][6] = NC
-tablero[0][2] = tablero[0][5] = NA
-tablero[5][0] = tablero[6][1] = NT
+tablero[6][7] = NP
+tablero[0][1] = tablero[0][2] = NC
+#tablero[5][2] = tablero[6][2] = NA
+tablero[6][0] = tablero[5][1] = NT
 # tablero[1][6] = ND
 tablero[0][3] = NR
     
@@ -243,7 +244,7 @@ def mov_rey_blanco(es_jaque_actual):
     global primer_mov_br
     
     if abs(x - xv) <= 1 and abs(y - yv) <= 1: 
-        if es_jaque((y, x), pieza_selec, True):
+        if esta_amenazada((y, x), pieza_selec, True):
             print("\n¡No puedes mover el rey a esa posición porque estaría en jaque!")
             return False
 
@@ -257,7 +258,7 @@ def mov_rey_blanco(es_jaque_actual):
         return True             
     elif not es_jaque_actual and not primer_mov_br and not primer_mov_btd and tablero[y][xv + 1] in CASILLAS_VACIAS and x == xv + 2 and tablero[y][xv + 3] == BT:
         for dx in range(1, 3):
-            if es_jaque((y, xv + dx), pieza_selec, True):
+            if esta_amenazada((y, xv + dx), pieza_selec, True):
                 print("\n¡No puedes enrocar porque el rey pasaría por una casilla en jaque!")
                 return False
             
@@ -270,7 +271,7 @@ def mov_rey_blanco(es_jaque_actual):
           tablero[y][xv - 1] in CASILLAS_VACIAS and tablero[y][xv - 3] in CASILLAS_VACIAS 
           and x == xv - 2 and tablero[y][xv - 4] == BT):
         for dx in range(1, 3):
-            if es_jaque((y, xv - dx), pieza_selec, True):
+            if esta_amenazada((y, xv - dx), pieza_selec, True):
                 print("\n¡No puedes enrocar porque el rey pasaría por una casilla en jaque!")
                 return False
             
@@ -400,27 +401,62 @@ def buscar_atacantes_estrella(posicion_amenazada, pieza_actual, movimientos, set
             
     return atacantes_encontrados
 
-def es_jaque(posicion_rey, pieza_actual, es_turno_blanco):
-    return len(obtener_atacantes(posicion_rey, pieza_actual, es_turno_blanco)) > 0
+def esta_amenazada(posicion_pieza, pieza_actual, es_turno_blanco):
+    return len(obtener_atacantes(posicion_pieza, pieza_actual, es_turno_blanco)) > 0
 
 def detalles_jaque(posicion_rey, pieza_actual, es_turno_blanco):
     return obtener_atacantes(posicion_rey, pieza_actual, es_turno_blanco)
 
-def es_jaque_mate(posicion_en_jaque, es_turno_blanco):
-    ya, xa = posicion_en_jaque
-    pieza_actual = tablero[ya][xa]
+def es_jaque_mate(posicion_en_jaque, es_turno_blanco, atacantes_jaque):
+    rey_y, rey_x = posicion_en_jaque
+    pieza_actual = tablero[rey_y][rey_x]
     casillas_en_jaque = 0
     pieza_enemigas_sr = piezas_negras_sr if es_turno_blanco else piezas_blancas_sr
+    
     for dy, dx in MOVIMIENTOS_REY:
-        yn, xn = ya + dy, xa + dx
+        yn, xn = rey_y + dy, rey_x + dx
         if not es_movimiento_valido(yn, xn):
             casillas_en_jaque += 1
-        elif (tablero[yn][xn] in CASILLAS_VACIAS or tablero[yn][xn] in pieza_enemigas_sr) and es_jaque((yn, xn), pieza_actual, es_turno_blanco):
+        elif (tablero[yn][xn] in CASILLAS_VACIAS or tablero[yn][xn] in pieza_enemigas_sr) and esta_amenazada((yn, xn), pieza_actual, es_turno_blanco):
             casillas_en_jaque += 1
-            
-    if casillas_en_jaque == len(MOVIMIENTOS_REY):
-        return True
     
+    rey_sin_movimientos = casillas_en_jaque == len(MOVIMIENTOS_REY)
+            
+    if rey_sin_movimientos:
+        ye, xe = atacantes_jaque[0][0]
+        pieza_atacante = atacantes_jaque[0][1]
+        movimiento_diagonal = pieza_atacante in {BA, NA}
+        movimiento_ortogonal = pieza_atacante in {BT, NT}
+        
+        if pieza_atacante in {BP, NP, BC, NC}:
+            return not esta_amenazada((ye, xe), pieza_atacante, not es_turno_blanco)
+        elif pieza_atacante in {BA, NA}:
+            paso_y = 1 if rey_y > ye else -1
+            paso_x = 1 if rey_x > xe else -1
+            
+            y = ye
+            x = xe  
+            while (y, x) != (rey_y, rey_x):
+                if esta_amenazada((y, x), pieza_atacante, not es_turno_blanco):
+                    return False
+                y += paso_y
+                x += paso_x
+            
+            return True
+        elif pieza_atacante in {BT, NT}:
+            paso_y = (rey_y > ye) - (rey_y < ye)
+            paso_x = (rey_x > xe) - (rey_x < xe)
+            
+            y = ye
+            x = xe  
+            while (y, x) != (rey_y, rey_x):
+                if esta_amenazada((y, x), pieza_atacante, not es_turno_blanco):
+                    return False
+                y += paso_y
+                x += paso_x
+                
+            return True
+ 
     return False
 
 def reiniciar_turno():
@@ -451,9 +487,10 @@ while True:
     rey_actual = BR if es_turno_blanco else NR
     ya, xa = hallar_posicion_pieza(tablero, rey_actual)
     
-    es_jaque_actual = es_jaque((ya, xa), rey_actual, es_turno_blanco)
+    atacantes_jaque = detalles_jaque((ya, xa), rey_actual, es_turno_blanco)
+    es_jaque_actual = len(atacantes_jaque) > 0
     if es_jaque_actual:
-        if es_jaque_mate((ya, xa), es_turno_blanco):
+        if es_jaque_mate((ya, xa), es_turno_blanco, atacantes_jaque):
             print(f"\n¡Jaque mate! ¡Ganan las {'negras' if es_turno_blanco else 'blancas'}!")
             break 
         print(f"\n¡Jaque al rey {'blanco' if es_turno_blanco else 'negro'}!")
@@ -490,7 +527,7 @@ while True:
         if es_posicion_valida(p) and movimiento_pieza(pieza_selec, x, y, es_jaque_actual):
             tablero_copia = copy.deepcopy(tablero)
             tablero[y][x] = pieza_selec
-            if pieza_selec != rey_actual and es_jaque((ya, xa), pieza_selec, es_turno_blanco):
+            if pieza_selec != rey_actual and esta_amenazada((ya, xa), rey_actual, es_turno_blanco):
                 tablero = tablero_copia
                 mensaje_validacion("rey_en_jaque")
             else:
