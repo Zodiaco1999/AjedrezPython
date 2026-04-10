@@ -81,8 +81,8 @@ tablero[7][7] = BR
 tablero[6][7] = NP
 tablero[0][1] = tablero[0][2] = NC
 #tablero[5][2] = tablero[6][2] = NA
-tablero[6][0] = tablero[5][1] = NT
-# tablero[1][6] = ND
+tablero[6][0] = tablero[0][6] = NT
+tablero[5][1] = ND
 tablero[0][3] = NR
     
 def es_posicion_valida(p):
@@ -407,6 +407,28 @@ def esta_amenazada(posicion_pieza, pieza_actual, es_turno_blanco):
 def detalles_jaque(posicion_rey, pieza_actual, es_turno_blanco):
     return obtener_atacantes(posicion_rey, pieza_actual, es_turno_blanco)
 
+def es_mate_estrella(posicion_rey, atacante_jaque, pieza_atacante, es_turno_blanco):
+    rey_y, rey_x = posicion_rey
+    ye, xe = atacante_jaque
+    paso_y = paso_x = 0
+    
+    if abs(xe - rey_x) == abs(ye - rey_y):
+        paso_y = 1 if rey_y > ye else -1
+        paso_x = 1 if rey_x > xe else -1
+    elif xe == rey_x or ye == rey_y:
+        paso_y = (rey_y > ye) - (rey_y < ye)
+        paso_x = (rey_x > xe) - (rey_x < xe)
+            
+    y = ye
+    x = xe  
+    while (y, x) != (rey_y, rey_x):
+        if esta_amenazada((y, x), pieza_atacante, not es_turno_blanco):
+            return False
+        y += paso_y
+        x += paso_x
+    
+    return True
+
 def es_jaque_mate(posicion_en_jaque, es_turno_blanco, atacantes_jaque):
     rey_y, rey_x = posicion_en_jaque
     pieza_actual = tablero[rey_y][rey_x]
@@ -425,38 +447,12 @@ def es_jaque_mate(posicion_en_jaque, es_turno_blanco, atacantes_jaque):
     if rey_sin_movimientos:
         ye, xe = atacantes_jaque[0][0]
         pieza_atacante = atacantes_jaque[0][1]
-        movimiento_diagonal = pieza_atacante in {BA, NA}
-        movimiento_ortogonal = pieza_atacante in {BT, NT}
-        
+
         if pieza_atacante in {BP, NP, BC, NC}:
             return not esta_amenazada((ye, xe), pieza_atacante, not es_turno_blanco)
-        elif pieza_atacante in {BA, NA}:
-            paso_y = 1 if rey_y > ye else -1
-            paso_x = 1 if rey_x > xe else -1
-            
-            y = ye
-            x = xe  
-            while (y, x) != (rey_y, rey_x):
-                if esta_amenazada((y, x), pieza_atacante, not es_turno_blanco):
-                    return False
-                y += paso_y
-                x += paso_x
-            
-            return True
-        elif pieza_atacante in {BT, NT}:
-            paso_y = (rey_y > ye) - (rey_y < ye)
-            paso_x = (rey_x > xe) - (rey_x < xe)
-            
-            y = ye
-            x = xe  
-            while (y, x) != (rey_y, rey_x):
-                if esta_amenazada((y, x), pieza_atacante, not es_turno_blanco):
-                    return False
-                y += paso_y
-                x += paso_x
-                
-            return True
- 
+        elif pieza_atacante in {BA, NA, BT, NT, BD, ND}:
+            return es_mate_estrella(posicion_en_jaque, (ye, xe), pieza_atacante, es_turno_blanco)
+
     return False
 
 def reiniciar_turno():
