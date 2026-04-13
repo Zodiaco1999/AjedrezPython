@@ -30,10 +30,7 @@ filas_a_indices = {
 x = 0
 y = 0
 turno = 1
-turno_inv = 0
 pieza_selec = ""
-primer_mov_bp = False
-primer_mov_np = False
 
 # LLenar los tableros con las casillas negras y blancas
 for t in range(4):
@@ -62,20 +59,30 @@ def imprimir_tablero():
     nomenclatura_columnas()
 
 # Asignando las piezas blancas
-#tablero[6] = [BP] * 8
-# tablero[7][1] = tablero[7][6] = BC
-# tablero[7][2] = tablero[4][2] = BA
+tablero[6] = [BP] * 8
+tablero[7][1] = tablero[7][6] = BC
+tablero[7][2] = tablero[7][5] = BA
 tablero[7][0] = tablero[7][7] = BT
-tablero[5][5] = BD
+tablero[5][3] = BD
 tablero[7][4] = BR
 # Asignando las piezas negras
-tablero[1] = [NP] * 8
-tablero[0][1] = tablero[0][6] = NC
-#tablero[0][2] = tablero[7][3] = NA
-tablero[0][0] = tablero[0][7] = NT
-tablero[2][0] = ND
-tablero[0][4] = NR
+#tablero[1] = [NP] * 8
+# tablero[0][1] = tablero[0][6] = NC
+# tablero[0][2] = tablero[0][5] = NA
+# tablero[0][0] = tablero[0][7] = NT
+# tablero[0][3] = ND
+tablero[0][1] = NR
+tablero[1][6] = BP 
+
+def turnos(t):
+    es_turno_blanco = t % 2 != 0
+    color = "blanco" if es_turno_blanco else "negro"
+    estado_peones[color]['salto_doble'] = False
+    estado_peones[color]['columna'] = None
     
+    print(f"\n================Turno de las {'blancas' if es_turno_blanco else 'negras'}================")
+    return es_turno_blanco
+
 def es_posicion_valida(p):
     if len(p) != 2:
         return False
@@ -91,94 +98,60 @@ def es_posicion_valida(p):
         return False
     
     return True
-
-def turnos(t, ti=1):
-    global primer_mov_bp, primer_mov_np
-    
-    es_turno_blanco = t % 2 != 0
-    color = "blanca" if es_turno_blanco else "negra"
-    
-    print(f"\n================Turno de las {color}s================")
-    if es_turno_blanco: 
-        primer_mov_bp = False
-        return True
-    else: 
-        primer_mov_np = False
-        return False
             
+def es_movimiento_valido(yn, xn):
+    return 0 <= yn < 8 and 0 <= xn < 8
+
 def es_pieza_actual(pieza):
     return pieza_selec == pieza
             
-def mov_peon_blanco():
-    global primer_mov_bp, primer_mov_np 
-    incr_xv = xv + 1
-    decr_xv = xv - 1
-
-    if xv == 7:
-        incr_xv = 7
-    if xv == 0:
-        decr_xv = 0
+def coronar_peon(color):
+    global pieza_selec
+    piezas_coronacion = f"d){BD}, t){BT}, a){BA}, c){BC}" if color == "blanco" else f"d){ND}, t){NT}, a){NA}, c){NC}"
+    print("\n¡Tu peón ha llegado al final del tablero!")
+    selec_pieza_coronada = None
     
-    # Validación captura el paso peón blanco
-    if yv == 3 and tablero[yv][incr_xv] == NP and primer_mov_np:
-        if y == 2 and incr_xv == x:
-            tablero[yv][incr_xv] = tablero_vacio[yv][incr_xv]
-            return True
-    if yv == 3 and tablero[yv][decr_xv] == NP and primer_mov_np:
-        if y == 2 and decr_xv == x:
-            tablero[yv][decr_xv] = tablero_vacio[yv][decr_xv]
-            return True
-    # --------------------------------------
-    if yv in range(6):
-        if yv - 1 == y and xv == x and tablero[y][x] not in TOTAL_PIEZAS:  
-            return True
-        elif yv - 1 == y and xv + 1 == x or xv - 1 == x:
-            if tablero[y][x] in piezas_negras_sr:
-                return True
-    else:
-        if ((yv - 2 == y or yv - 1 == y) and xv == x) and tablero[y][x] not in TOTAL_PIEZAS:
-            if y == 4:
-                primer_mov_bp = True     
-            return True    
-        if yv - 1 == y and (incr_xv == x or xv - 1 == x):
-            if tablero[y][x] in piezas_negras_sr:
-                return True
-        
-def mov_peon_negro():
-    global primer_mov_bp, primer_mov_np 
-    incr_xv = xv + 1
-    decr_xv = xv - 1
+    while selec_pieza_coronada not in ['c', 'a', 't', 'd']:
+        selec_pieza_coronada = input(f"Ingresa la pieza que deseas coronar\n{piezas_coronacion} ").lower()
+        if selec_pieza_coronada == "c":
+            pieza_selec = BC if color == "blanco" else NC
+        elif selec_pieza_coronada == "a":
+            pieza_selec = BA if color == "blanco" else NA
+        elif selec_pieza_coronada == "t":
+            pieza_selec = BT if color == "blanco" else NT
+        elif selec_pieza_coronada == "d":
+            pieza_selec = BD if color == "blanco" else ND
 
-    if xv == 7:
-        incr_xv = 7
-    if xv == 0:
-        decr_xv = 0
+def mov_peon(color, y, x, yv, xv):
+    cfg = config_peon[color]
+    dir = cfg['dir']
     
-    # Validación captura el paso peón negro 
-    if yv == 4 and tablero[yv][incr_xv] == BP and primer_mov_bp:
-        if y == 5 and incr_xv == x:
-            tablero[yv][incr_xv] = tablero_vacio[yv][incr_xv]
-            return True
-    if yv == 4 and tablero[yv][decr_xv] == BP and primer_mov_bp:
-        if y == 5 and decr_xv == x:
-            tablero[yv][decr_xv] = tablero_vacio[yv][decr_xv]
-            return True
-    # -------------------------------------    
-    if yv in range(2, 8):
-        if yv + 1 == y and xv == x and tablero[y][x] not in TOTAL_PIEZAS:  
-           return True
-        elif yv + 1 == y and xv + 1 == x or xv - 1 == x:
-           if tablero[y][x] in piezas_blancas_sr:
-               return True    
-    else:
-        if ((yv + 2 == y or yv + 1 == y) and xv == x) and tablero[y][x] not in TOTAL_PIEZAS: 
-            if y == 3:
-                primer_mov_np = True 
-            return True    
-        if yv + 1 == y and (xv + 1 == x or xv - 1 == x):
-            if tablero[y][x] in piezas_blancas_sr:
-                return True   
-         
+    if (yv == cfg['paso'] and y == yv + dir and x in [xv - 1, xv + 1] and tablero[yv][x] == cfg['rival_peon'] and
+       estado_peones[cfg['rival_color']]['salto_doble'] and estado_peones[cfg['rival_color']]['columna'] == x):
+        print(f"\n¡Captura al paso del peón {color}!")
+        tablero[yv][x] = tablero_vacio[yv][x]
+        return True
+
+    # Movimiento normal (1 casilla)
+    if y == yv + dir and x == xv and tablero[y][x] not in TOTAL_PIEZAS:
+        if y == cfg['coronacion']:
+            coronar_peon(color)
+        return True
+    
+    # Movimiento doble (2 casillas)
+    if yv == cfg['inicio'] and y == yv + 2*dir and x == xv and tablero[y+dir][x] not in TOTAL_PIEZAS and tablero[y][x] not in TOTAL_PIEZAS:
+        estado_peones[color]['salto_doble'] = True
+        estado_peones[color]['columna'] = x
+        return True
+    
+    # Captura diagonal
+    if y == yv + dir and x in [xv-1, xv+1] and tablero[y][x] in cfg['rivales']:
+        if y == cfg['coronacion']:
+            coronar_peon(color)
+        return True
+          
+    return False
+ 
 def mov_caballo():
     if ((xv + 2 == x or xv - 2 == x) and (yv - 1 == y or yv + 1 == y)) or ((xv + 1 == x or xv - 1 == x) and (yv - 2 == y or yv + 2 == y)):
         return True
@@ -280,7 +253,7 @@ def movimiento_pieza(p, x, y, es_jaque_actual, es_turno_blanco):
     # movimientos de las piezas blancas
     elif p in piezas_blancas and tablero[y][x] not in piezas_blancas + NR:
         if es_pieza_actual(BP): 
-            return mov_peon_blanco()
+            return mov_peon(color, y, x, yv, xv)
         elif es_pieza_actual(BC):
             return mov_caballo()
         elif es_pieza_actual(BA):
@@ -294,7 +267,7 @@ def movimiento_pieza(p, x, y, es_jaque_actual, es_turno_blanco):
     # movimientos de las piezas negras        
     elif p in piezas_negras and tablero[y][x] not in piezas_negras + BR:
         if es_pieza_actual(NP):
-            return mov_peon_negro()
+            return mov_peon(color, y, x, yv, xv)
         elif es_pieza_actual(NC):
             return mov_caballo()
         elif es_pieza_actual(NA):
@@ -315,9 +288,6 @@ def hallar_posicion_pieza(tablero, pieza_buscada):
             return [y, x]
     return None
 
-def es_movimiento_valido(yn, xn):
-    return 0 <= yn < 8 and 0 <= xn < 8
-    
 def validar_jaque(yn, xn, pieza_objetivo):
     return es_movimiento_valido(yn, xn) and tablero[yn][xn] == pieza_objetivo
 

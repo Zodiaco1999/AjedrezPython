@@ -1,4 +1,5 @@
-# Diccionario central de mensajes
+from piezas_y_casillas import *
+
 MENSAJES_ERROR = {
     "posicion_fuera": "¡La posición ingresada está fuera del tablero!",
     "casilla_vacia": "¡No ha seleccionado ninguna pieza!",
@@ -13,16 +14,26 @@ estado_enroque = {
         'rey_movido': False, 
         'torre_der_movida': False, 
         'torre_izq_movida': False, 
-        'torre': '♜ ', 
-        'rey_rival': '♔ '
+        'torre': BT, 
+        'rey_rival': NR
     },
     'negro': {
         'rey_movido': False, 
         'torre_der_movida': False, 
         'torre_izq_movida': False, 
-        'torre': '♖ ', 
-        'rey_rival': '♚ '
+        'torre': NT, 
+        'rey_rival': BR
     }
+}
+
+config_peon = {
+    'blanco': {'dir': -1, 'inicio': 6, 'paso': 3, 'rival_peon': NP, 'rivales': piezas_negras_sr, 'rival_color': 'negro', 'coronacion': 0},
+    'negro': {'dir': 1, 'inicio': 1, 'paso': 4, 'rival_peon': BP, 'rivales': piezas_blancas_sr, 'rival_color': 'blanco', 'coronacion': 7}
+}
+
+estado_peones = {
+    'blanco': {'salto_doble': False , 'columna': None},
+    'negro': {'salto_doble': False, 'columna': None}
 }
 
 def mensaje_validacion(clave):
