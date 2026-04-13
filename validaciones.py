@@ -8,6 +8,23 @@ MENSAJES_ERROR = {
     "posicion_invalida": "¡Posición invalida!"
 }
 
+estado_enroque = {
+    'blanco': {
+        'rey_movido': False, 
+        'torre_der_movida': False, 
+        'torre_izq_movida': False, 
+        'torre': '♜ ', 
+        'rey_rival': '♔ '
+    },
+    'negro': {
+        'rey_movido': False, 
+        'torre_der_movida': False, 
+        'torre_izq_movida': False, 
+        'torre': '♖ ', 
+        'rey_rival': '♚ '
+    }
+}
+
 def mensaje_validacion(clave):
     """Muestra el error correspondiente y pausa la ejecución."""
     mensaje = MENSAJES_ERROR.get(clave, "Error desconocido en la validación.")

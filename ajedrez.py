@@ -34,14 +34,6 @@ turno_inv = 0
 pieza_selec = ""
 primer_mov_bp = False
 primer_mov_np = False
-primer_mov_nr = False
-primer_mov_ntd = False
-primer_mov_nti = False
-primer_mov_br = False
-primer_mov_btd = False
-primer_mov_bti = False
-
-# tablero = [[N for i in range(8) if i % 2 == 0] for j in range(8)]
 
 # LLenar los tableros con las casillas negras y blancas
 for t in range(4):
@@ -71,19 +63,18 @@ def imprimir_tablero():
 
 # Asignando las piezas blancas
 #tablero[6] = [BP] * 8
-tablero[0][0] = tablero[5][2] = BC
-#tablero[7][2] = tablero[7][5] = BA
-#tablero[7][4] = tablero[1][1] = BT
-#tablero[7][3] = BD
-tablero[7][7] = BR
+# tablero[7][1] = tablero[7][6] = BC
+# tablero[7][2] = tablero[4][2] = BA
+tablero[7][0] = tablero[7][7] = BT
+tablero[5][5] = BD
+tablero[7][4] = BR
 # Asignando las piezas negras
-#tablero[1] = [NP] * 8
-tablero[6][7] = NP
-tablero[0][1] = tablero[0][2] = NC
-#tablero[5][2] = tablero[6][2] = NA
-tablero[6][0] = tablero[0][6] = NT
-tablero[5][1] = ND
-tablero[0][3] = NR
+tablero[1] = [NP] * 8
+tablero[0][1] = tablero[0][6] = NC
+#tablero[0][2] = tablero[7][3] = NA
+tablero[0][0] = tablero[0][7] = NT
+tablero[2][0] = ND
+tablero[0][4] = NR
     
 def es_posicion_valida(p):
     if len(p) != 2:
@@ -115,11 +106,6 @@ def turnos(t, ti=1):
         primer_mov_np = False
         return False
             
-def turno_invalido(es_turno_blanco):
-    color = "blanca" if es_turno_blanco else "negra"
-    print(f"\n¡Por favor, seleccione una pieza {color}!\n")
-    input("Presione enter para continuar\n")
-    
 def es_pieza_actual(pieza):
     return pieza_selec == pieza
             
@@ -144,13 +130,13 @@ def mov_peon_blanco():
             return True
     # --------------------------------------
     if yv in range(6):
-        if yv - 1 == y and xv == x and tablero[y][x] not in all_piezas:  
+        if yv - 1 == y and xv == x and tablero[y][x] not in TOTAL_PIEZAS:  
             return True
         elif yv - 1 == y and xv + 1 == x or xv - 1 == x:
             if tablero[y][x] in piezas_negras_sr:
                 return True
     else:
-        if ((yv - 2 == y or yv - 1 == y) and xv == x) and tablero[y][x] not in all_piezas:
+        if ((yv - 2 == y or yv - 1 == y) and xv == x) and tablero[y][x] not in TOTAL_PIEZAS:
             if y == 4:
                 primer_mov_bp = True     
             return True    
@@ -179,13 +165,13 @@ def mov_peon_negro():
             return True
     # -------------------------------------    
     if yv in range(2, 8):
-        if yv + 1 == y and xv == x and tablero[y][x] not in all_piezas:  
+        if yv + 1 == y and xv == x and tablero[y][x] not in TOTAL_PIEZAS:  
            return True
         elif yv + 1 == y and xv + 1 == x or xv - 1 == x:
            if tablero[y][x] in piezas_blancas_sr:
                return True    
     else:
-        if ((yv + 2 == y or yv + 1 == y) and xv == x) and tablero[y][x] not in all_piezas: 
+        if ((yv + 2 == y or yv + 1 == y) and xv == x) and tablero[y][x] not in TOTAL_PIEZAS: 
             if y == 3:
                 primer_mov_np = True 
             return True    
@@ -205,7 +191,7 @@ def camino_libre():
     indice_y = yv + desplazamiento_y
     
     while (indice_y, indice_x) != (y, x):
-        if tablero[indice_y][indice_x] in all_piezas:
+        if tablero[indice_y][indice_x] in TOTAL_PIEZAS:
             return False
         indice_x += desplazamiento_x
         indice_y += desplazamiento_y
@@ -219,7 +205,6 @@ def mov_alfil():
     return camino_libre()
  
 def mov_torre():
-    global primer_mov_nti, primer_mov_ntd, primer_mov_bti, primer_mov_btd
     if xv != x and yv != y:
         return False
     
@@ -227,84 +212,68 @@ def mov_torre():
     
     if es_movimiento_valido:
         if (yv, xv) == (0, 0):
-            primer_mov_nti = True
+            estado_enroque['negro']['torre_izq_movida'] = True
         elif (yv, xv) == (0, 7):
-            primer_mov_ntd = True
+            estado_enroque['negro']['torre_der_movida'] = True
         elif (yv, xv) == (7, 0):
-            primer_mov_bti = True
+            estado_enroque['blanco']['torre_izq_movida'] = True
         elif (yv, xv) == (7, 7):
-            primer_mov_btd = True 
+            estado_enroque['blanco']['torre_der_movida'] = True 
 
     return es_movimiento_valido
  
 def mov_reina():
     return mov_alfil() or mov_torre()
 
-def mov_rey_blanco(es_jaque_actual):
-    global primer_mov_br
-    
+def mov_rey(color, es_jaque_actual, y, x, yv, xv, pieza_selec):
+    datos = estado_enroque[color]
+    torre_aliada = datos['torre']
+    rey_rival = datos['rey_rival']
+
     if abs(x - xv) <= 1 and abs(y - yv) <= 1: 
         if esta_amenazada((y, x), pieza_selec, True):
-            print("\n¡No puedes mover el rey a esa posición porque estaría en jaque!")
+            print(f"\n¡No puedes mover el rey {color} a esa posición porque estaría en jaque!")
             return False
 
         for dy, dx in MOVIMIENTOS_REY:
             yn, xn = y + dy, x + dx
-            if validar_jaque(yn, xn, NR):
-                print("\n¡No puedes mover el rey a esa posición porque estaría en jaque!")
+            if validar_jaque(yn, xn, rey_rival):
+                print(f"\n¡No puedes mover el rey {color} a esa posición porque chocaría con el rey rival!")
                 return False
 
-        primer_mov_br = True
-        return True             
-    elif not es_jaque_actual and not primer_mov_br and not primer_mov_btd and tablero[y][xv + 1] in CASILLAS_VACIAS and x == xv + 2 and tablero[y][xv + 3] == BT:
-        for dx in range(1, 3):
-            if esta_amenazada((y, xv + dx), pieza_selec, True):
-                print("\n¡No puedes enrocar porque el rey pasaría por una casilla en jaque!")
-                return False
-            
-        print("\n¡Enroque corto rey blanco!")
-        tablero[y][xv + 1] = BT
-        tablero[y][xv + 3] = tablero_vacio[y][xv + 3]
-        primer_mov_br = True
-        return True
-    elif (not es_jaque_actual and not primer_mov_br and not primer_mov_bti and 
-          tablero[y][xv - 1] in CASILLAS_VACIAS and tablero[y][xv - 3] in CASILLAS_VACIAS 
-          and x == xv - 2 and tablero[y][xv - 4] == BT):
-        for dx in range(1, 3):
-            if esta_amenazada((y, xv - dx), pieza_selec, True):
-                print("\n¡No puedes enrocar porque el rey pasaría por una casilla en jaque!")
-                return False
-            
-        print("\n¡Enroque largo rey blanco!")
-        tablero[y][xv - 1] = BT
-        tablero[y][xv - 4] = tablero_vacio[y][xv - 4]
-        primer_mov_br = True
-        return True
-    
-    return False
+        datos['rey_movido'] = True
+        return True            
 
-def mov_rey_negro():
-    global primer_mov_nr
-    
-    if (xv + 1 == x or xv - 1 == x or xv == x) and (yv + 1 == y or yv - 1 == y or yv == y):
-        primer_mov_nr = True
-        return True         
-    elif not primer_mov_nr and x == xv + 2 and tablero[y][xv + 3] == NT:
-        print("¡Enroque corto rey negro!")
-        tablero[y][xv + 1] = NT
+    if es_jaque_actual or datos['rey_movido']:
+        return False
+
+    if x == xv + 2 and not datos['torre_der_movida'] and tablero[y][xv + 3] == torre_aliada:
+        for dx in range(1, 3):
+            if tablero[y][xv + dx] in TOTAL_PIEZAS_SR or esta_amenazada((y, xv + dx), pieza_selec, True):
+                print("\n¡No puedes enrocar porque el rey pasaría por una casilla en jaque!, o hay una pieza obstaculo en el camino")
+                return False
+        
+        print(f"\n¡Enroque corto rey {color}!")
+        tablero[y][xv + 1] = torre_aliada
         tablero[y][xv + 3] = tablero_vacio[y][xv + 3]
-        primer_mov_nr = True
+        datos['rey_movido'] = True
         return True
-    elif not primer_mov_nr and x == xv - 2 and tablero[y][xv - 4] == NT:
-        print("¡Enroque largo rey negro!")
-        tablero[y][xv - 1] = NT
+    elif x == xv - 2 and not datos['torre_izq_movida'] and tablero[y][xv - 4] == torre_aliada:
+        for dx in range(1, 4):
+            if tablero[y][xv - dx] in TOTAL_PIEZAS_SR or esta_amenazada((y, xv - dx), pieza_selec, True):
+                print("\n¡No puedes enrocar porque el rey pasaría por una casilla en jaque!, o hay una pieza obstaculo en el camino")
+                return False
+        
+        print(f"\n¡Enroque largo rey {color}!")
+        tablero[y][xv - 1] = torre_aliada
         tablero[y][xv - 4] = tablero_vacio[y][xv - 4]
-        primer_mov_nr = True
+        datos['rey_movido'] = True
         return True
     
     return False
     
-def movimiento_pieza(p, x, y, es_jaque_actual):
+def movimiento_pieza(p, x, y, es_jaque_actual, es_turno_blanco):
+    color = "blanco" if es_turno_blanco else "negro"
     if x == xv and y == yv:
         print("\n¡No puedes mover la pieza a su propia posición!")
         return False
@@ -321,7 +290,7 @@ def movimiento_pieza(p, x, y, es_jaque_actual):
         elif es_pieza_actual(BD):
             return mov_reina()
         elif es_pieza_actual(BR):
-            return mov_rey_blanco(es_jaque_actual)
+            return mov_rey(color, es_jaque_actual, y, x, yv, xv, pieza_selec)
     # movimientos de las piezas negras        
     elif p in piezas_negras and tablero[y][x] not in piezas_negras + BR:
         if es_pieza_actual(NP):
@@ -335,7 +304,7 @@ def movimiento_pieza(p, x, y, es_jaque_actual):
         elif es_pieza_actual(ND):
             return mov_reina()
         elif es_pieza_actual(NR):
-            return mov_rey_negro()
+            return mov_rey(color, es_jaque_actual, y, x, yv, xv, pieza_selec)
     else:
         return False
     
@@ -437,7 +406,7 @@ def es_jaque_mate(posicion_en_jaque, es_turno_blanco, atacantes_jaque):
     
     for dy, dx in MOVIMIENTOS_REY:
         yn, xn = rey_y + dy, rey_x + dx
-        if not es_movimiento_valido(yn, xn):
+        if not es_movimiento_valido(yn, xn) or tablero[yn][xn] not in CASILLAS_VACIAS:
             casillas_en_jaque += 1
         elif (tablero[yn][xn] in CASILLAS_VACIAS or tablero[yn][xn] in pieza_enemigas_sr) and esta_amenazada((yn, xn), pieza_actual, es_turno_blanco):
             casillas_en_jaque += 1
@@ -447,6 +416,7 @@ def es_jaque_mate(posicion_en_jaque, es_turno_blanco, atacantes_jaque):
     if rey_sin_movimientos:
         ye, xe = atacantes_jaque[0][0]
         pieza_atacante = atacantes_jaque[0][1]
+        
 
         if pieza_atacante in {BP, NP, BC, NC}:
             return not esta_amenazada((ye, xe), pieza_atacante, not es_turno_blanco)
@@ -520,7 +490,7 @@ while True:
     turno += 1
     
     while not revertir_seleccion():
-        if es_posicion_valida(p) and movimiento_pieza(pieza_selec, x, y, es_jaque_actual):
+        if es_posicion_valida(p) and movimiento_pieza(pieza_selec, x, y, es_jaque_actual, es_turno_blanco):
             tablero_copia = copy.deepcopy(tablero)
             tablero[y][x] = pieza_selec
             if pieza_selec != rey_actual and esta_amenazada((ya, xa), rey_actual, es_turno_blanco):

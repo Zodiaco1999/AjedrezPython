@@ -21,6 +21,7 @@ piezas_negras_sr = f"{NP}{NC}{NA}{NT}{ND}"
 piezas_blancas = f"{piezas_blancas_sr}{BR}"
 piezas_negras = f"{piezas_negras_sr}{NR}"
 
-all_piezas = piezas_blancas + piezas_negras
+TOTAL_PIEZAS = piezas_blancas + piezas_negras
+TOTAL_PIEZAS_SR = piezas_blancas_sr + piezas_negras_sr
 
 CASILLAS_VACIAS = {B, N}
