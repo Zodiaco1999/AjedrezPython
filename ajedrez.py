@@ -63,16 +63,15 @@ tablero[6] = [BP] * 8
 tablero[7][1] = tablero[7][6] = BC
 tablero[7][2] = tablero[7][5] = BA
 tablero[7][0] = tablero[7][7] = BT
-tablero[5][3] = BD
+tablero[2][7] = BD
 tablero[7][4] = BR
 # Asignando las piezas negras
 #tablero[1] = [NP] * 8
 # tablero[0][1] = tablero[0][6] = NC
 # tablero[0][2] = tablero[0][5] = NA
 # tablero[0][0] = tablero[0][7] = NT
-# tablero[0][3] = ND
-tablero[0][1] = NR
-tablero[1][6] = BP 
+# tablero[0][7] = ND
+tablero[1][1] = NR
 
 def turnos(t):
     es_turno_blanco = t % 2 != 0
@@ -105,22 +104,25 @@ def es_movimiento_valido(yn, xn):
 def es_pieza_actual(pieza):
     return pieza_selec == pieza
             
-def coronar_peon(color):
-    global pieza_selec
+def coronar_peon(color, es_coronacion):
+    if not es_coronacion:
+        return None
+    
     piezas_coronacion = f"d){BD}, t){BT}, a){BA}, c){BC}" if color == "blanco" else f"d){ND}, t){NT}, a){NA}, c){NC}"
     print("\n¡Tu peón ha llegado al final del tablero!")
-    selec_pieza_coronada = None
     
+    selec_pieza_coronada = None
     while selec_pieza_coronada not in ['c', 'a', 't', 'd']:
         selec_pieza_coronada = input(f"Ingresa la pieza que deseas coronar\n{piezas_coronacion} ").lower()
-        if selec_pieza_coronada == "c":
-            pieza_selec = BC if color == "blanco" else NC
-        elif selec_pieza_coronada == "a":
-            pieza_selec = BA if color == "blanco" else NA
-        elif selec_pieza_coronada == "t":
-            pieza_selec = BT if color == "blanco" else NT
-        elif selec_pieza_coronada == "d":
-            pieza_selec = BD if color == "blanco" else ND
+    
+    mapeo_piezas = {
+        'c': BC if color == "blanco" else NC,
+        'a': BA if color == "blanco" else NA,
+        't': BT if color == "blanco" else NT,
+        'd': BD if color == "blanco" else ND
+    }
+    
+    return mapeo_piezas[selec_pieza_coronada]
 
 def mov_peon(color, y, x, yv, xv):
     cfg = config_peon[color]
@@ -130,27 +132,25 @@ def mov_peon(color, y, x, yv, xv):
        estado_peones[cfg['rival_color']]['salto_doble'] and estado_peones[cfg['rival_color']]['columna'] == x):
         print(f"\n¡Captura al paso del peón {color}!")
         tablero[yv][x] = tablero_vacio[yv][x]
-        return True
+        return True, None
 
     # Movimiento normal (1 casilla)
     if y == yv + dir and x == xv and tablero[y][x] not in TOTAL_PIEZAS:
-        if y == cfg['coronacion']:
-            coronar_peon(color)
-        return True
+        pieza_coronada = coronar_peon(color, y == cfg['coronacion'])
+        return True, pieza_coronada
     
     # Movimiento doble (2 casillas)
     if yv == cfg['inicio'] and y == yv + 2*dir and x == xv and tablero[y+dir][x] not in TOTAL_PIEZAS and tablero[y][x] not in TOTAL_PIEZAS:
         estado_peones[color]['salto_doble'] = True
         estado_peones[color]['columna'] = x
-        return True
+        return True, None
     
     # Captura diagonal
     if y == yv + dir and x in [xv-1, xv+1] and tablero[y][x] in cfg['rivales']:
-        if y == cfg['coronacion']:
-            coronar_peon(color)
-        return True
+        pieza_coronada = coronar_peon(color, y == cfg['coronacion'])
+        return True, pieza_coronada
           
-    return False
+    return False, None
  
 def mov_caballo():
     if ((xv + 2 == x or xv - 2 == x) and (yv - 1 == y or yv + 1 == y)) or ((xv + 1 == x or xv - 1 == x) and (yv - 2 == y or yv + 2 == y)):
@@ -198,13 +198,15 @@ def mov_torre():
 def mov_reina():
     return mov_alfil() or mov_torre()
 
-def mov_rey(color, es_jaque_actual, y, x, yv, xv, pieza_selec):
+def mov_rey(y, x, yv, xv, es_jaque_actual, es_turno_blanco):
+    color = "blanco" if es_turno_blanco else "negro"
+    rey_actual = BR if es_turno_blanco else NR
     datos = estado_enroque[color]
     torre_aliada = datos['torre']
     rey_rival = datos['rey_rival']
 
     if abs(x - xv) <= 1 and abs(y - yv) <= 1: 
-        if esta_amenazada((y, x), pieza_selec, True):
+        if esta_amenazada((y, x), rey_actual, es_turno_blanco):
             print(f"\n¡No puedes mover el rey {color} a esa posición porque estaría en jaque!")
             return False
 
@@ -222,7 +224,7 @@ def mov_rey(color, es_jaque_actual, y, x, yv, xv, pieza_selec):
 
     if x == xv + 2 and not datos['torre_der_movida'] and tablero[y][xv + 3] == torre_aliada:
         for dx in range(1, 3):
-            if tablero[y][xv + dx] in TOTAL_PIEZAS_SR or esta_amenazada((y, xv + dx), pieza_selec, True):
+            if tablero[y][xv + dx] in TOTAL_PIEZAS_SR or esta_amenazada((y, xv + dx), rey_actual, es_turno_blanco):
                 print("\n¡No puedes enrocar porque el rey pasaría por una casilla en jaque!, o hay una pieza obstaculo en el camino")
                 return False
         
@@ -233,7 +235,7 @@ def mov_rey(color, es_jaque_actual, y, x, yv, xv, pieza_selec):
         return True
     elif x == xv - 2 and not datos['torre_izq_movida'] and tablero[y][xv - 4] == torre_aliada:
         for dx in range(1, 4):
-            if tablero[y][xv - dx] in TOTAL_PIEZAS_SR or esta_amenazada((y, xv - dx), pieza_selec, True):
+            if tablero[y][xv - dx] in TOTAL_PIEZAS_SR or esta_amenazada((y, xv - dx), rey_actual, es_turno_blanco):
                 print("\n¡No puedes enrocar porque el rey pasaría por una casilla en jaque!, o hay una pieza obstaculo en el camino")
                 return False
         
@@ -244,42 +246,6 @@ def mov_rey(color, es_jaque_actual, y, x, yv, xv, pieza_selec):
         return True
     
     return False
-    
-def movimiento_pieza(p, x, y, es_jaque_actual, es_turno_blanco):
-    color = "blanco" if es_turno_blanco else "negro"
-    if x == xv and y == yv:
-        print("\n¡No puedes mover la pieza a su propia posición!")
-        return False
-    # movimientos de las piezas blancas
-    elif p in piezas_blancas and tablero[y][x] not in piezas_blancas + NR:
-        if es_pieza_actual(BP): 
-            return mov_peon(color, y, x, yv, xv)
-        elif es_pieza_actual(BC):
-            return mov_caballo()
-        elif es_pieza_actual(BA):
-            return mov_alfil()
-        elif es_pieza_actual(BT):
-            return mov_torre()    
-        elif es_pieza_actual(BD):
-            return mov_reina()
-        elif es_pieza_actual(BR):
-            return mov_rey(color, es_jaque_actual, y, x, yv, xv, pieza_selec)
-    # movimientos de las piezas negras        
-    elif p in piezas_negras and tablero[y][x] not in piezas_negras + BR:
-        if es_pieza_actual(NP):
-            return mov_peon(color, y, x, yv, xv)
-        elif es_pieza_actual(NC):
-            return mov_caballo()
-        elif es_pieza_actual(NA):
-            return mov_alfil()
-        elif es_pieza_actual(NT):
-            return mov_torre()   
-        elif es_pieza_actual(ND):
-            return mov_reina()
-        elif es_pieza_actual(NR):
-            return mov_rey(color, es_jaque_actual, y, x, yv, xv, pieza_selec)
-    else:
-        return False
     
 def hallar_posicion_pieza(tablero, pieza_buscada):
     for y, fila in enumerate(tablero):
@@ -412,6 +378,47 @@ def revertir_seleccion():
     if p == "v":
         reiniciar_turno()
         return True
+    else:
+        return False
+
+def movimiento_pieza(p, x, y, es_jaque_actual, es_turno_blanco):
+    global pieza_selec
+    color = "blanco" if es_turno_blanco else "negro"
+    if x == xv and y == yv:
+        print("\n¡No puedes mover la pieza a su propia posición!")
+        return False
+    elif p in piezas_blancas and tablero[y][x] not in piezas_blancas + NR:
+        if es_pieza_actual(BP): 
+            mov_valido, pieza_coronada = mov_peon(color, y, x, yv, xv)
+            if mov_valido and pieza_coronada:
+                pieza_selec = pieza_coronada
+            return mov_valido
+        elif es_pieza_actual(BC):
+            return mov_caballo()
+        elif es_pieza_actual(BA):
+            return mov_alfil()
+        elif es_pieza_actual(BT):
+            return mov_torre()    
+        elif es_pieza_actual(BD):
+            return mov_reina()
+        elif es_pieza_actual(BR):
+            return mov_rey(y, x, yv, xv, es_jaque_actual, es_turno_blanco)
+    elif p in piezas_negras and tablero[y][x] not in piezas_negras + BR:
+        if es_pieza_actual(NP): 
+            mov_valido, pieza_coronada = mov_peon(color, y, x, yv, xv)
+            if mov_valido and pieza_coronada:
+                pieza_selec = pieza_coronada
+            return mov_valido
+        elif es_pieza_actual(NC):
+            return mov_caballo()
+        elif es_pieza_actual(NA):
+            return mov_alfil()
+        elif es_pieza_actual(NT):
+            return mov_torre()   
+        elif es_pieza_actual(ND):
+            return mov_reina()
+        elif es_pieza_actual(NR):
+            return mov_rey(y, x, yv, xv, es_jaque_actual, es_turno_blanco)
     else:
         return False
 
