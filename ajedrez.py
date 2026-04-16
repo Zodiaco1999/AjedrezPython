@@ -1,10 +1,8 @@
-from piezas_y_casillas import *
-from movimientos import *
+from piezas_y_casillas_const import *
+from movimientos_const import *
 from validaciones import *
 import copy
 
-fila_p = []
-fila_i = []
 tablero = []
 tablero_vacio = []
 columnas_a_indices = {
@@ -27,13 +25,13 @@ filas_a_indices = {
     '7': 1,
     '8': 0
 } 
-x = 0
-y = 0
 turno = 1
 pieza_selec = ""
 
 # LLenar los tableros con las casillas negras y blancas
 for t in range(4):
+    fila_p = []
+    fila_i = []
     for i in range(8):
         if i % 2 == 0:
             fila_p.append(B)
@@ -60,7 +58,7 @@ def imprimir_tablero():
 
 # Asignando las piezas blancas
 tablero[6] = [BP] * 8
-tablero[7][1] = tablero[7][6] = BC
+tablero[7][1] = tablero[4][4] = BC
 tablero[7][2] = tablero[7][5] = BA
 tablero[7][0] = tablero[7][7] = BT
 tablero[2][7] = BD
@@ -72,37 +70,16 @@ tablero[7][4] = BR
 # tablero[0][0] = tablero[0][7] = NT
 # tablero[0][7] = ND
 tablero[1][1] = NR
-
-def turnos(t):
-    es_turno_blanco = t % 2 != 0
-    color = "blanco" if es_turno_blanco else "negro"
-    estado_peones[color]['salto_doble'] = False
-    estado_peones[color]['columna'] = None
+tablero[1][6] = BP
     
-    print(f"\n================Turno de las {'blancas' if es_turno_blanco else 'negras'}================")
-    return es_turno_blanco
-
-def es_posicion_valida(p):
-    if len(p) != 2:
-        return False
-    
-    global x, y
- 
-    p = p.lower() 
-    
-    x = columnas_a_indices.get(p[0])
-    y = filas_a_indices.get(p[1])
-    
-    if x is None or y is None:
-        return False
-    
-    return True
-            
-def es_movimiento_valido(yn, xn):
+def es_coordenada_valida(yn, xn):
     return 0 <= yn < 8 and 0 <= xn < 8
 
+def pieza_seleccionada(yv, xv):
+    return tablero[yv][xv]  
+    
 def es_pieza_actual(pieza):
-    return pieza_selec == pieza
+    return pieza_selec in pieza
             
 def coronar_peon(color, es_coronacion):
     if not es_coronacion:
@@ -152,9 +129,8 @@ def mov_peon(color, y, x, yv, xv):
           
     return False, None
  
-def mov_caballo():
-    if ((xv + 2 == x or xv - 2 == x) and (yv - 1 == y or yv + 1 == y)) or ((xv + 1 == x or xv - 1 == x) and (yv - 2 == y or yv + 2 == y)):
-        return True
+def mov_caballo(y, x, yv, xv):
+    return any(y == yv + dy and x == xv + dx for dy, dx in MOVIMIENTOS_CABALLO)
 
 def camino_libre():
     desplazamiento_x = (x > xv) - (x < xv)
@@ -171,13 +147,13 @@ def camino_libre():
 
     return True
     
-def mov_alfil():
+def mov_alfil(y, x, yv, xv):
     if abs(x - xv) != abs(y - yv):
         return False
 
     return camino_libre()
  
-def mov_torre():
+def mov_torre(y, x, yv, xv):
     if xv != x and yv != y:
         return False
     
@@ -195,8 +171,8 @@ def mov_torre():
 
     return es_movimiento_valido
  
-def mov_reina():
-    return mov_alfil() or mov_torre()
+def mov_reina(y, x, yv, xv):
+    return mov_alfil(y, x, yv, xv) or mov_torre(y, x, yv, xv)
 
 def mov_rey(y, x, yv, xv, es_jaque_actual, es_turno_blanco):
     color = "blanco" if es_turno_blanco else "negro"
@@ -247,15 +223,24 @@ def mov_rey(y, x, yv, xv, es_jaque_actual, es_turno_blanco):
     
     return False
     
-def hallar_posicion_pieza(tablero, pieza_buscada):
-    for y, fila in enumerate(tablero):
-        if pieza_buscada in fila:
-            x = fila.index(pieza_buscada)
-            return [y, x]
-    return None
-
 def validar_jaque(yn, xn, pieza_objetivo):
-    return es_movimiento_valido(yn, xn) and tablero[yn][xn] == pieza_objetivo
+    return es_coordenada_valida(yn, xn) and tablero[yn][xn] == pieza_objetivo
+
+def buscar_atacantes_estrella(posicion_amenazada, pieza_actual, movimientos, set_piezas_rivales):
+    ya, xa = posicion_amenazada
+    atacantes_encontrados = []
+    for dy, dx in movimientos:
+        yn, xn = ya + dy, xa + dx
+        while es_coordenada_valida(yn, xn):
+            posicion_nueva = tablero[yn][xn]
+            if posicion_nueva not in CASILLAS_VACIAS | {pieza_actual}:
+                if posicion_nueva in set_piezas_rivales:
+                    atacantes_encontrados.append(((yn, xn), posicion_nueva))
+                break
+            yn += dy
+            xn += dx
+            
+    return atacantes_encontrados
 
 def obtener_atacantes(posicion_amenazada, pieza_actual, es_turno_blanco):
     ya, xa = posicion_amenazada
@@ -266,7 +251,7 @@ def obtener_atacantes(posicion_amenazada, pieza_actual, es_turno_blanco):
     alfil_rival = NA if es_turno_blanco else BA
     torre_rival = NT if es_turno_blanco else BT
     dama_rival = ND if es_turno_blanco else BD
-    movimientos_peon_rival = MOVIMIENTOS_PEON_NEGRO if es_turno_blanco else MOVIMIENTOS_PEON_BLANCO
+    movimientos_peon_rival = MOVIMIENTOS_REY_ATAQUE_NP if es_turno_blanco else MOVIMIENTOS_REY_ATAQUE_BP
 
     for dy, dx in movimientos_peon_rival:
         yn, xn = ya + dy, xa + dx
@@ -289,22 +274,6 @@ def obtener_atacantes(posicion_amenazada, pieza_actual, es_turno_blanco):
     )
 
     return atacantes
-
-def buscar_atacantes_estrella(posicion_amenazada, pieza_actual, movimientos, set_piezas_rivales):
-    ya, xa = posicion_amenazada
-    atacantes_encontrados = []
-    for dy, dx in movimientos:
-        yn, xn = ya + dy, xa + dx
-        while es_movimiento_valido(yn, xn):
-            posicion_nueva = tablero[yn][xn]
-            if posicion_nueva not in CASILLAS_VACIAS | {pieza_actual}:
-                if posicion_nueva in set_piezas_rivales:
-                    atacantes_encontrados.append(((yn, xn), posicion_nueva))
-                break
-            yn += dy
-            xn += dx
-            
-    return atacantes_encontrados
 
 def esta_amenazada(posicion_pieza, pieza_actual, es_turno_blanco):
     return len(obtener_atacantes(posicion_pieza, pieza_actual, es_turno_blanco)) > 0
@@ -342,7 +311,7 @@ def es_jaque_mate(posicion_en_jaque, es_turno_blanco, atacantes_jaque):
     
     for dy, dx in MOVIMIENTOS_REY:
         yn, xn = rey_y + dy, rey_x + dx
-        if not es_movimiento_valido(yn, xn) or tablero[yn][xn] not in CASILLAS_VACIAS:
+        if not es_coordenada_valida(yn, xn) or tablero[yn][xn] not in CASILLAS_VACIAS:
             casillas_en_jaque += 1
         elif (tablero[yn][xn] in CASILLAS_VACIAS or tablero[yn][xn] in pieza_enemigas_sr) and esta_amenazada((yn, xn), pieza_actual, es_turno_blanco):
             casillas_en_jaque += 1
@@ -361,66 +330,106 @@ def es_jaque_mate(posicion_en_jaque, es_turno_blanco, atacantes_jaque):
 
     return False
 
-def reiniciar_turno():
-    global turno
-    global x
-    global y
-    x = xv
-    y = yv
-    turno -= 1
-    tablero[y][x] = pieza_selec
+def esta_rey_ahogado(es_turno_blanco):
+    piezas_actuales_str = piezas_blancas if es_turno_blanco else piezas_negras
+    piezas_actuales = piezas_actuales_str.split()
+    
+    return False
 
-def revertir_seleccion():
-    imprimir_tablero()
-    global p
-    print(f"\nPieza seleccionada: {pieza_selec}")
-    p = input('\nIngrese la posición donde quiere mover la pieza o presione "v" para volver\n')
-    if p == "v":
-        reiniciar_turno()
-        return True
-    else:
+def turnos(t):
+    es_turno_blanco = t % 2 != 0
+    color = "blanco" if es_turno_blanco else "negro"
+    estado_peones[color]['salto_doble'] = False
+    estado_peones[color]['columna'] = None
+    
+    print(f"\n================Turno de las {'blancas' if es_turno_blanco else 'negras'}================")
+    return es_turno_blanco
+
+def hallar_posicion_pieza(tablero, pieza_buscada):
+    for y, fila in enumerate(tablero):
+        if pieza_buscada in fila:
+            x = fila.index(pieza_buscada)
+            return [y, x]
+    return None
+
+def posicion_valida(p):
+    if len(p) != 2:
         return False
+    
+    p = p.lower() 
+    
+    x = columnas_a_indices.get(p[0])
+    y = filas_a_indices.get(p[1])
+    
+    if x is None or y is None:
+        return None
+    
+    return y, x
 
-def movimiento_pieza(p, x, y, es_jaque_actual, es_turno_blanco):
+def movimiento_pieza(p, x, y, xv, yv, es_jaque_actual, es_turno_blanco):
     global pieza_selec
     color = "blanco" if es_turno_blanco else "negro"
+    
     if x == xv and y == yv:
         print("\n¡No puedes mover la pieza a su propia posición!")
         return False
-    elif p in piezas_blancas and tablero[y][x] not in piezas_blancas + NR:
-        if es_pieza_actual(BP): 
-            mov_valido, pieza_coronada = mov_peon(color, y, x, yv, xv)
-            if mov_valido and pieza_coronada:
-                pieza_selec = pieza_coronada
-            return mov_valido
-        elif es_pieza_actual(BC):
-            return mov_caballo()
-        elif es_pieza_actual(BA):
-            return mov_alfil()
-        elif es_pieza_actual(BT):
-            return mov_torre()    
-        elif es_pieza_actual(BD):
-            return mov_reina()
-        elif es_pieza_actual(BR):
-            return mov_rey(y, x, yv, xv, es_jaque_actual, es_turno_blanco)
-    elif p in piezas_negras and tablero[y][x] not in piezas_negras + BR:
-        if es_pieza_actual(NP): 
-            mov_valido, pieza_coronada = mov_peon(color, y, x, yv, xv)
-            if mov_valido and pieza_coronada:
-                pieza_selec = pieza_coronada
-            return mov_valido
-        elif es_pieza_actual(NC):
-            return mov_caballo()
-        elif es_pieza_actual(NA):
-            return mov_alfil()
-        elif es_pieza_actual(NT):
-            return mov_torre()   
-        elif es_pieza_actual(ND):
-            return mov_reina()
-        elif es_pieza_actual(NR):
-            return mov_rey(y, x, yv, xv, es_jaque_actual, es_turno_blanco)
-    else:
+    
+    if not ((p in piezas_blancas and tablero[y][x] not in piezas_blancas + NR) or 
+            (p in piezas_negras and tablero[y][x] not in piezas_negras + BR)):
         return False
+
+    movimientos_piezas = {
+        BP: lambda: mov_peon(color, y, x, yv, xv),
+        NP: lambda: mov_peon(color, y, x, yv, xv),
+        BC: lambda: mov_caballo(y, x, yv, xv),
+        NC: lambda: mov_caballo(y, x, yv, xv),
+        BA: lambda: mov_alfil(y, x, yv, xv),
+        NA: lambda: mov_alfil(y, x, yv, xv),
+        BT: lambda: mov_torre(y, x, yv, xv),
+        NT: lambda: mov_torre(y, x, yv, xv),
+        BD: lambda: mov_reina(y, x, yv, xv),
+        ND: lambda: mov_reina(y, x, yv, xv),
+        BR: lambda: mov_rey(y, x, yv, xv, es_jaque_actual, es_turno_blanco),
+        NR: lambda: mov_rey(y, x, yv, xv, es_jaque_actual, es_turno_blanco),
+    }
+    
+    resultado = movimientos_piezas[pieza_selec]()
+    
+    if isinstance(resultado, tuple):
+        mov_valido, pieza_coronada = resultado
+        if mov_valido and pieza_coronada:
+            pieza_selec = pieza_coronada
+        return mov_valido
+    
+    return resultado
+
+def elegir_posicion():
+    while True:
+        imprimir_tablero()
+        print(f"\nPieza seleccionada: {pieza_selec}")
+        p = input('\nIngrese la posición donde quiere mover la pieza o presione "v" para volver\n')
+        
+        if p == "v":
+            tablero[yv][xv] = pieza_selec
+            return False
+        
+        resultado = posicion_valida(p)
+        if not resultado:
+            mensaje_validacion("posicion_invalida")
+            continue
+        
+        y, x = resultado
+        if movimiento_pieza(pieza_selec, x, y, xv, yv, es_jaque_actual, es_turno_blanco):
+            tablero_copia = copy.deepcopy(tablero)
+            tablero[y][x] = pieza_selec 
+            if pieza_selec != rey_actual and esta_amenazada((ya, xa), rey_actual, es_turno_blanco):
+                tablero[:] = tablero_copia  
+                mensaje_validacion("rey_en_jaque")
+                continue
+            
+            return True 
+        else:
+            mensaje_validacion("posicion_invalida")
 
 # Inicio del juego
 while True:
@@ -438,6 +447,10 @@ while True:
             break 
         print(f"\n¡Jaque al rey {'blanco' if es_turno_blanco else 'negro'}!")
    
+    if esta_rey_ahogado(es_turno_blanco):
+        print(f"\n¡Rey {'negro' if es_turno_blanco else 'blanco'} ahogado!\n¡Partida en tablas!")
+        break  
+        
     p = input("\nIngrese la posición de la pieza que quiere seleccionar\n")
     
     ###### Quitar esta linea al final ######
@@ -446,10 +459,12 @@ while True:
         continue
     ########################################
     
-    if not es_posicion_valida(p):
+    resultado = posicion_valida(p)
+    if not resultado:
         mensaje_validacion("posicion_fuera")
         continue
 
+    y, x = resultado
     pieza_selec = tablero[y][x]
 
     if pieza_selec in CASILLAS_VACIAS:
@@ -464,16 +479,8 @@ while True:
 
     tablero[y][x] = tablero_vacio[y][x]
     xv, yv = x, y
-    turno += 1
-    
-    while not revertir_seleccion():
-        if es_posicion_valida(p) and movimiento_pieza(pieza_selec, x, y, es_jaque_actual, es_turno_blanco):
-            tablero_copia = copy.deepcopy(tablero)
-            tablero[y][x] = pieza_selec
-            if pieza_selec != rey_actual and esta_amenazada((ya, xa), rey_actual, es_turno_blanco):
-                tablero = tablero_copia
-                mensaje_validacion("rey_en_jaque")
-            else:
-                break
-        else:
-            mensaje_validacion("posicion_invalida")
+
+    if elegir_posicion():
+        turno += 1
+    else:
+        continue

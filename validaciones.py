@@ -1,4 +1,4 @@
-from piezas_y_casillas import *
+from piezas_y_casillas_const import *
 
 MENSAJES_ERROR = {
     "posicion_fuera": "¡La posición ingresada está fuera del tablero!",
