@@ -16,12 +16,10 @@ NT = "♖ "
 NR = "♔ "
 ND = "♕ "
 
-piezas_blancas_sr = f"{BP}{BC}{BA}{BT}{BD}"
-piezas_negras_sr = f"{NP}{NC}{NA}{NT}{ND}"
-piezas_blancas = f"{piezas_blancas_sr}{BR}"
-piezas_negras = f"{piezas_negras_sr}{NR}"
-
-TOTAL_PIEZAS = piezas_blancas + piezas_negras
-TOTAL_PIEZAS_SR = piezas_blancas_sr + piezas_negras_sr
-
+PIEZAS_BLANCAS_SR = f"{BP}{BC}{BA}{BT}{BD}"
+PIEZAS_NEGRAS_SR = f"{NP}{NC}{NA}{NT}{ND}"
+PIEZAS_BLANCAS = f"{PIEZAS_BLANCAS_SR}{BR}"
+PIEZAS_NEGRAS = f"{PIEZAS_NEGRAS_SR}{NR}"
+TOTAL_PIEZAS = PIEZAS_BLANCAS + PIEZAS_NEGRAS
+TOTAL_PIEZAS_SR = PIEZAS_BLANCAS_SR + PIEZAS_NEGRAS_SR
 CASILLAS_VACIAS = {B, N}

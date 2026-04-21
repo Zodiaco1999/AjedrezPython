@@ -1,7 +1,38 @@
-from piezas_y_casillas_const import TOTAL_PIEZAS, TOTAL_PIEZAS_SR, BR, NR
-from movimientos_const import MOVIMIENTOS_CABALLO, MOVIMIENTOS_REY
-from diccionarios import estado_enroque, estado_peones, config_peon
-from validaciones import mensaje_pieza, validar_jaque, esta_amenazada
+from constantes.piezas import (TOTAL_PIEZAS, TOTAL_PIEZAS_SR, PIEZAS_BLANCAS, PIEZAS_NEGRAS, 
+ BP, NP, BC, NC, BA, NA, BT, NT, BD, ND, BR, NR)
+from constantes.movimientos import MOVIMIENTOS_CABALLO, MOVIMIENTOS_REY
+from estado.estados_piezas import estado_enroque, estado_peones, config_peon
+from presentacion.mensajes import mensaje_pieza
+from reglas.detector_jaque import validar_jaque, esta_amenazada
+
+def movimiento_pieza(tablero, tablero_vacio, p, x, y, xv, yv, es_jaque_actual, es_turno_blanco, es_simulacion=False):
+    global pieza_selec
+    color = "blanco" if es_turno_blanco else "negro"
+    
+    if x == xv and y == yv:
+        print("\n¡No puedes mover la pieza a su propia posición!")
+        return False
+    
+    if not ((p in PIEZAS_BLANCAS and tablero[y][x] not in PIEZAS_BLANCAS + NR) or 
+            (p in PIEZAS_NEGRAS and tablero[y][x] not in PIEZAS_NEGRAS + BR)):
+        return False
+
+    movimientos_piezas = {
+        BP: lambda: mov_peon(tablero, tablero_vacio, color, y, x, yv, xv, es_simulacion),
+        NP: lambda: mov_peon(tablero, tablero_vacio, color, y, x, yv, xv, es_simulacion),
+        BC: lambda: mov_caballo(y, x, yv, xv),
+        NC: lambda: mov_caballo(y, x, yv, xv),
+        BA: lambda: mov_alfil(tablero, y, x, yv, xv),
+        NA: lambda: mov_alfil(tablero, y, x, yv, xv),        
+        BT: lambda: mov_torre(tablero, y, x, yv, xv),
+        NT: lambda: mov_torre(tablero, y, x, yv, xv),
+        BD: lambda: mov_reina(tablero, y, x, yv, xv),
+        ND: lambda: mov_reina(tablero, y, x, yv, xv),
+        BR: lambda: mov_rey(tablero, tablero_vacio, y, x, yv, xv, es_jaque_actual, es_turno_blanco, es_simulacion),
+        NR: lambda: mov_rey(tablero, tablero_vacio, y, x, yv, xv, es_jaque_actual, es_turno_blanco, es_simulacion),
+    }
+
+    return movimientos_piezas[p]()
 
 def mov_peon(tablero, tablero_vacio, color, y, x, yv, xv, es_simulacion):
     cfg = config_peon[color]
@@ -122,5 +153,3 @@ def mov_rey(tablero, tablero_vacio, y, x, yv, xv, es_jaque_actual, es_turno_blan
         return True
     
     return False
-
-

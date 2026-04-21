@@ -1,33 +1,12 @@
-from diccionarios import MENSAJES_ERROR
-from piezas_y_casillas_const import *
-from movimientos_const import *
-from diccionarios import columnas_a_indices, filas_a_indices
-
-def mensaje_validacion(clave):
-    mensaje = MENSAJES_ERROR.get(clave, "Error desconocido en la validación.")
-    print(f"\n{mensaje}\n")
-    input("Presione Enter para continuar...")
-    
-def mensaje_pieza(es_simulacion, mensaje):
-    if not es_simulacion:
-        print(f"\n{mensaje}")
-        
-def es_coordenada_valida(yn, xn):
-    return 0 <= yn < 8 and 0 <= xn < 8
-
-def posicion_valida(p):
-    if len(p) != 2:
-        return False
-    
-    p = p.lower() 
-    
-    x = columnas_a_indices.get(p[0])
-    y = filas_a_indices.get(p[1])
-    
-    if x is None or y is None:
-        return None
-    
-    return y, x
+from constantes.piezas import (
+    BP, NP, BC, NC, BA, NA, BT, NT, BD, ND,
+    CASILLAS_VACIAS, PIEZAS_BLANCAS_SR, PIEZAS_NEGRAS_SR
+)
+from constantes.movimientos import (
+    MOVIMIENTOS_CABALLO, MOVIMIENTOS_ALFIL, MOVIMIENTOS_TORRE, MOVIMIENTOS_REY,
+    MOVIMIENTOS_REY_ATAQUE_BP, MOVIMIENTOS_REY_ATAQUE_NP
+)
+from utilidades.validaciones_basicas import es_coordenada_valida
 
 def validar_jaque(tablero, yn, xn, pieza_objetivo):
     return es_coordenada_valida(yn, xn) and tablero[yn][xn] == pieza_objetivo
@@ -113,7 +92,7 @@ def es_jaque_mate(tablero, posicion_en_jaque, es_turno_blanco, atacantes_jaque):
     rey_y, rey_x = posicion_en_jaque
     pieza_actual = tablero[rey_y][rey_x]
     casillas_en_jaque = 0
-    pieza_enemigas_sr = piezas_negras_sr if es_turno_blanco else piezas_blancas_sr
+    pieza_enemigas_sr = PIEZAS_NEGRAS_SR if es_turno_blanco else PIEZAS_BLANCAS_SR
     
     for dy, dx in MOVIMIENTOS_REY:
         yn, xn = rey_y + dy, rey_x + dx
@@ -135,12 +114,3 @@ def es_jaque_mate(tablero, posicion_en_jaque, es_turno_blanco, atacantes_jaque):
             return es_mate_estrella(tablero, posicion_en_jaque, (ye, xe), pieza_atacante, es_turno_blanco)
 
     return False
-
-def hallar_posicion_piezas(tablero, pieza_buscada):
-    piezas_encontradas = []
-    for y, fila in enumerate(tablero):
-        for x, pieza in enumerate(fila):
-            if pieza == pieza_buscada:
-                piezas_encontradas.append((y, x))
-            
-    return piezas_encontradas if piezas_encontradas else None
