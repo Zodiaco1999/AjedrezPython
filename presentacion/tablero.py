@@ -21,13 +21,12 @@ def asignar_casillas_tablero():
 
 def organizar_piezas_tablero(tablero):
     # Asignando las piezas blancas
-    # tablero[6] = [BP] * 8
-    # tablero[7][1] = tablero[7][6] = BC
-    # tablero[7][2] = tablero[7][5] = BA
-    # tablero[7][0] = tablero[7][7] = BT
-    # tablero[7][3] = BD
+    tablero[6] = [BP] * 8
+    tablero[7][1] = tablero[7][6] = BC
+    tablero[7][2] = tablero[7][5] = BA
+    tablero[7][0] = tablero[7][7] = BT
+    tablero[7][3] = BD
     tablero[7][4] = BR
-    tablero[4][1] = BP
     # Asignando las piezas negras
     tablero[1] = [NP] * 8
     tablero[0][1] = tablero[0][6] = NC
