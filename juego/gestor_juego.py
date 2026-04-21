@@ -1,7 +1,9 @@
-from constantes.piezas import BP, NP, BR, NR, CASILLAS_VACIAS, PIEZAS_BLANCAS, PIEZAS_NEGRAS
+from constantes.piezas import BP, NP, BR, NR, CASILLAS_VACIAS, PIEZAS_BLANCAS, PIEZAS_NEGRAS, TOTAL_PIEZAS_SR
 from estado.estados_piezas import config_peon, guardar_estado_global
 from reglas.detector_jaque import detalles_jaque, es_jaque_mate, esta_amenazada
 from reglas.detector_rey_ahogado import esta_rey_ahogado
+from reglas.detector_repeticion import registrar_posicion, hay_repeticion_triple
+from reglas.detector_cincuenta_movimientos import verificar_movimiento, hay_cincuenta_movimientos
 from reglas.movimientos_piezas import movimiento_pieza
 from reglas.logica_coronacion import coronar_peon
 from presentacion.mensajes import mensaje_validacion
@@ -28,6 +30,7 @@ def elegir_posicion(tablero, tablero_vacio, pieza_selec, yv, xv, y, x, es_turno_
             continue
         
         y, x = resultado
+        
         if movimiento_pieza(tablero, tablero_vacio, pieza_selec, x, y, xv, yv, es_jaque_actual, es_turno_blanco):
             color = "blanco" if es_turno_blanco else "negro"
             if pieza_selec in {BP, NP} and config_peon[color]['coronacion'] == y:
@@ -39,7 +42,9 @@ def elegir_posicion(tablero, tablero_vacio, pieza_selec, yv, xv, y, x, es_turno_
                 mensaje_validacion("rey_en_jaque")
                 continue
             
-            tablero[y][x] = pieza_selec 
+            hay_captura = tablero[y][x] in TOTAL_PIEZAS_SR
+            tablero[y][x] = pieza_selec
+            verificar_movimiento(pieza_selec, hay_captura)
             return True 
         else:
             mensaje_validacion("posicion_invalida")
@@ -47,6 +52,8 @@ def elegir_posicion(tablero, tablero_vacio, pieza_selec, yv, xv, y, x, es_turno_
 def iniciar_juego():
     turno = 1
     tablero, tablero_vacio = inicializar_tablero()
+    registrar_posicion(tablero, True)
+    
     while True:
         imprimir_tablero(tablero)
 
@@ -91,4 +98,14 @@ def iniciar_juego():
         xv, yv = x, y
 
         if elegir_posicion(tablero, tablero_vacio, pieza_selec, yv, xv, y, x, es_turno_blanco, es_jaque_actual, rey_actual, (yr, xr)):
+            registrar_posicion(tablero, not es_turno_blanco) 
+            
+            if hay_repeticion_triple(tablero, not es_turno_blanco):
+                print(f"\n¡Posición repetida 3 veces!, ¡Partida en tablas!")
+                break
+            
+            if hay_cincuenta_movimientos():
+                print(f"\n¡Se alcanzaron 50 movimientos sin captura ni movimiento de peon!, ¡Partida en tablas!")
+                break
+            
             turno += 1
