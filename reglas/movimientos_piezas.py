@@ -117,12 +117,6 @@ def mov_rey(tablero, tablero_vacio, y, x, yv, xv, es_jaque_actual, es_turno_blan
             mensaje_pieza(es_simulacion, f"¡No puedes mover el rey {color} a esa posición porque estaría en jaque!")
             return False
 
-        for dy, dx in MOVIMIENTOS_REY:
-            yn, xn = y + dy, x + dx
-            if validar_jaque(tablero, yn, xn, rey_rival):
-                mensaje_pieza(es_simulacion, f"¡No puedes mover el rey {color} a esa posición porque chocaría con el rey rival!")
-                return False
-
         datos['rey_movido'] = True
         return True            
 

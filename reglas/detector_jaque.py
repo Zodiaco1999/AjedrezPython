@@ -1,5 +1,5 @@
 from constantes.piezas import (
-    BP, NP, BC, NC, BA, NA, BT, NT, BD, ND,
+    BP, NP, BC, NC, BA, NA, BT, NT, BD, ND, BR, NR,
     CASILLAS_VACIAS, PIEZAS_BLANCAS_SR, PIEZAS_NEGRAS_SR
 )
 from constantes.movimientos import (
@@ -27,7 +27,7 @@ def buscar_atacantes_estrella(tablero, posicion_amenazada, pieza_actual, movimie
             
     return atacantes_encontrados
 
-def obtener_atacantes(tablero, posicion_amenazada, pieza_actual, es_turno_blanco):
+def obtener_atacantes(tablero, posicion_amenazada, pieza_actual, es_turno_blanco, con_movimientos_rey=True):
     ya, xa = posicion_amenazada
     atacantes = []
     
@@ -36,18 +36,20 @@ def obtener_atacantes(tablero, posicion_amenazada, pieza_actual, es_turno_blanco
     alfil_rival = NA if es_turno_blanco else BA
     torre_rival = NT if es_turno_blanco else BT
     dama_rival = ND if es_turno_blanco else BD
+    rey_rival = NR if es_turno_blanco else BR
     movimientos_peon_rival = MOVIMIENTOS_REY_ATAQUE_NP if es_turno_blanco else MOVIMIENTOS_REY_ATAQUE_BP
+    movimientos_rey = MOVIMIENTOS_REY if con_movimientos_rey else []
 
-    for dy, dx in movimientos_peon_rival:
-        yn, xn = ya + dy, xa + dx
-        if validar_jaque(tablero, yn, xn, peon_rival):
-            atacantes.append(((yn, xn), peon_rival))
-
-    for dy, dx in MOVIMIENTOS_CABALLO:
-        yn, xn = ya + dy, xa + dx
-        if validar_jaque(tablero, yn, xn, caballo_rival):
-            atacantes.append(((yn, xn), caballo_rival))
-
+    for movimientos, rival in [
+        (movimientos_peon_rival, peon_rival),
+        (MOVIMIENTOS_CABALLO, caballo_rival),
+        (movimientos_rey, rey_rival)
+    ]:
+        for dy, dx in movimientos:
+            yn, xn = ya + dy, xa + dx
+            if validar_jaque(tablero, yn, xn, rival):
+                atacantes.append(((yn, xn), rival))
+                
     atacantes_diagonales = {alfil_rival, dama_rival}
     atacantes.extend(
         buscar_atacantes_estrella(tablero, (ya, xa), pieza_actual, MOVIMIENTOS_ALFIL, atacantes_diagonales)
@@ -57,14 +59,14 @@ def obtener_atacantes(tablero, posicion_amenazada, pieza_actual, es_turno_blanco
     atacantes.extend(
         buscar_atacantes_estrella(tablero, (ya, xa), pieza_actual, MOVIMIENTOS_TORRE, atacantes_ortogonales)
     )
-
+    
     return atacantes
 
-def esta_amenazada(tablero, posicion_pieza, pieza_actual, es_turno_blanco):
-    return len(obtener_atacantes(tablero, posicion_pieza, pieza_actual, es_turno_blanco)) > 0
+def esta_amenazada(tablero, posicion_pieza, pieza_actual, es_turno_blanco, con_movimientos_rey=True):
+    return len(obtener_atacantes(tablero, posicion_pieza, pieza_actual, es_turno_blanco, con_movimientos_rey)) > 0
 
 def detalles_jaque(tablero, posicion_rey, pieza_actual, es_turno_blanco):
-    return obtener_atacantes(tablero, posicion_rey, pieza_actual, es_turno_blanco)
+    return obtener_atacantes(tablero, posicion_rey, pieza_actual, es_turno_blanco, con_movimientos_rey=False)
 
 def es_mate_estrella(tablero, posicion_rey, atacante_jaque, pieza_atacante, es_turno_blanco):
     rey_y, rey_x = posicion_rey
@@ -81,7 +83,7 @@ def es_mate_estrella(tablero, posicion_rey, atacante_jaque, pieza_atacante, es_t
     y = ye
     x = xe  
     while (y, x) != (rey_y, rey_x):
-        if esta_amenazada(tablero, (y, x), pieza_atacante, not es_turno_blanco):
+        if esta_amenazada(tablero, (y, x), pieza_atacante, not es_turno_blanco, con_movimientos_rey=False):
             return False
         y += paso_y
         x += paso_x
@@ -107,9 +109,8 @@ def es_jaque_mate(tablero, posicion_en_jaque, es_turno_blanco, atacantes_jaque):
         ye, xe = atacantes_jaque[0][0]
         pieza_atacante = atacantes_jaque[0][1]
         
-
         if pieza_atacante in {BP, NP, BC, NC}:
-            return not esta_amenazada(tablero, (ye, xe), pieza_atacante, not es_turno_blanco)
+            return not esta_amenazada(tablero, (ye, xe), pieza_atacante, not es_turno_blanco, con_movimientos_rey=False)
         elif pieza_atacante in {BA, NA, BT, NT, BD, ND}:
             return es_mate_estrella(tablero, posicion_en_jaque, (ye, xe), pieza_atacante, es_turno_blanco)
 

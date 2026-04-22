@@ -25,7 +25,7 @@ def esta_rey_ahogado(tablero, tablero_vacio, es_turno_blanco, rey_actual, posici
                 tablero_copia[ya][xa] = tablero_vacio[ya][xa]
                 if movimiento_pieza(tablero_copia, tablero_vacio, pieza, xn, yn, xa, ya, False, es_turno_blanco, True): 
                     tablero_copia[yn][xn] = pieza 
-                    if pieza != rey_actual and esta_amenazada(tablero_copia, posicion_rey, rey_actual, es_turno_blanco):
+                    if pieza != rey_actual and esta_amenazada(tablero_copia, posicion_rey, rey_actual, es_turno_blanco, con_movimientos_rey=False):
                         continue
                     
                     return False

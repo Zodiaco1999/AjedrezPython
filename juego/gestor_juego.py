@@ -20,9 +20,8 @@ def obtener_turno_actual(turno):
     rey_actual = BR if es_turno_blanco else NR
     return es_turno_blanco, rey_actual
 
-def verificar_estado_partida(tablero, tablero_vacio, es_turno_blanco, rey_actual, posicion_rey, es_jaque_actual):
+def verificar_estado_partida(tablero, tablero_vacio, es_turno_blanco, rey_actual, posicion_rey, es_jaque_actual, atacantes_jaque):
     if es_jaque_actual:
-        atacantes_jaque = detalles_jaque(tablero, posicion_rey, rey_actual, es_turno_blanco)
         if es_jaque_mate(tablero, posicion_rey, es_turno_blanco, atacantes_jaque):
             return True, f"\n¡Jaque mate! ¡Ganan las {'negras' if es_turno_blanco else 'blancas'}!"
         return False, f"\n¡Jaque al rey {'blanco' if es_turno_blanco else 'negro'}!"
@@ -56,7 +55,7 @@ def realizar_movimiento(tablero, tablero_vacio, pieza_selec, yv, xv, y, x, es_tu
                 pieza_selec = pieza_coronada
             tablero_copia = copy.deepcopy(tablero)    
             tablero_copia[y][x] = pieza_selec
-            if pieza_selec != rey_actual and esta_amenazada(tablero_copia, posicion_rey, rey_actual, es_turno_blanco):
+            if pieza_selec != rey_actual and esta_amenazada(tablero_copia, posicion_rey, rey_actual, es_turno_blanco, con_movimientos_rey=False):
                 mensaje_validacion("rey_en_jaque")
                 continue
             
@@ -87,7 +86,7 @@ def iniciar_juego():
         posicion_rey = hallar_posicion_pieza(tablero, rey_actual)
         atacantes_jaque = detalles_jaque(tablero, posicion_rey, rey_actual, es_turno_blanco)
         es_jaque_actual = len(atacantes_jaque) > 0
-        final, mensaje = verificar_estado_partida(tablero, tablero_vacio, es_turno_blanco, rey_actual, posicion_rey, es_jaque_actual)
+        final, mensaje = verificar_estado_partida(tablero, tablero_vacio, es_turno_blanco, rey_actual, posicion_rey, es_jaque_actual, atacantes_jaque)
         
         if mensaje:
             print(mensaje)
