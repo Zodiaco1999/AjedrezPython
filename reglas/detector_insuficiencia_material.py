@@ -1,4 +1,4 @@
-from constantes.piezas import BP, NP, BC, NC, BA, NA, BT, NT, BD, ND, BR, NR, TOTAL_PIEZAS
+from constantes.piezas import BP, NP, BC, NC, BA, NA, BT, NT, BD, ND, BR, NR
 from utilidades.buscador_piezas import hallar_posicion_pieza
 
 def contar_piezas(tablero):
