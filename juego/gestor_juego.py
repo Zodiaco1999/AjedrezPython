@@ -7,11 +7,11 @@ from reglas.detector_cincuenta_movimientos import verificar_movimiento, hay_cinc
 from reglas.detector_insuficiencia_material import hay_insuficiencia_material
 from reglas.movimientos_piezas import movimiento_pieza
 from reglas.logica_coronacion import coronar_peon
-from presentacion.mensajes import mensaje_validacion
 from presentacion.renderizador import imprimir_tablero
 from presentacion.tablero import inicializar_tablero
 from utilidades.validaciones_basicas import posicion_valida, validar_seleccion, solicitar_posicion_pieza
 from utilidades.buscador_piezas import hallar_posicion_pieza
+from utilidades.mensajes import mensaje_validacion
 from juego.gestor_turnos import turnos
 import copy
 

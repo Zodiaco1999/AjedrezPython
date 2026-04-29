@@ -2,8 +2,8 @@ from constantes.piezas import (TOTAL_PIEZAS, TOTAL_PIEZAS_SR, PIEZAS_BLANCAS, PI
  BP, NP, BC, NC, BA, NA, BT, NT, BD, ND, BR, NR)
 from constantes.movimientos import MOVIMIENTOS_CABALLO
 from estado.estados_piezas import estado_enroque, estado_peones, config_peon
-from presentacion.mensajes import mensaje_pieza
 from reglas.detector_jaque import esta_amenazada
+from utilidades.mensajes import mensaje_pieza
 
 def movimiento_pieza(tablero, tablero_vacio, p, x, y, xv, yv, es_jaque_actual, es_turno_blanco, es_simulacion=False):
     global pieza_selec

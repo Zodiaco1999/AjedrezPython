@@ -1,6 +1,6 @@
 from diccionarios.mapeos import columnas_a_indices, filas_a_indices
 from constantes.piezas import CASILLAS_VACIAS, PIEZAS_BLANCAS, PIEZAS_NEGRAS
-from presentacion.mensajes import mensaje_validacion
+from utilidades.mensajes import mensaje_validacion
 
 def posicion_valida(p):
     if len(p) != 2:
